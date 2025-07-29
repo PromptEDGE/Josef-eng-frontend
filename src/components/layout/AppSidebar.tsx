@@ -25,6 +25,8 @@ import {
   Mic,
   FileText,
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux/store';
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: Home },
@@ -48,6 +50,7 @@ const toolsNavItems = [
 ];
 
 export function AppSidebar() {
+  const projects = useSelector((state:RootState)=>state.project.project)
   const { state } = useSidebar();
   const location = useLocation();
   const collapsed = state === 'collapsed';
@@ -176,6 +179,20 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Projects History</SidebarGroupLabel>
+          <SidebarMenu>
+              {projects.map((item) => (
+                <SidebarMenuItem key={item.uid}>
+                  <SidebarMenuButton asChild className={getNavClassName(`/project/${item.uid}`)}>
+                    <NavLink to={`/project/${item.uid}`} className="capitalize flex items-center justify-between">
+                      {item.name}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+          </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
 
