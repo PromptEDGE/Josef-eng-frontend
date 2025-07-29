@@ -38,11 +38,6 @@ const projectNavItems = [
   { title: 'Library', url: '/library', icon: FolderOpen },
 ];
 
-const libraryItems = [
-  { title: 'Videos', url: '/library/videos', icon: Video, badge: '8' },
-  { title: 'Audio Files', url: '/library/audio', icon: Mic, badge: '12' },
-  { title: 'Documents', url: '/library/documents', icon: FileText, badge: '247' },
-];
 
 const toolsNavItems = [
   { title: 'Proposals', url: '/proposals', icon: Users, badge: '3' },
@@ -51,9 +46,16 @@ const toolsNavItems = [
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
+  const library = useSelector((state:RootState)=>state.library.library)
   const { state } = useSidebar();
   const location = useLocation();
   const collapsed = state === 'collapsed';
+  
+  const libraryItems = [
+    { title: 'Videos', url: '/library/videos', icon: Video, badge: library.filter((item)=>item.type==="video").length },
+    { title: 'Audio Files', url: '/library/audio', icon: Mic, badge: library.filter((item)=>item.type==="audio").length },
+    { title: 'Documents', url: '/library/documents', icon: FileText, badge: library.filter((item)=>item.type==="document").length },
+  ];
 
   const isActive = (path: string) => {
     if (path === '/') {
