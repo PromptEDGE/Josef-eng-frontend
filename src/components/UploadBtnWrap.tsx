@@ -1,0 +1,52 @@
+import { AudioLines, Files, Image, Video } from "lucide-react";
+import {  type ReactNode, } from "react";
+import { AnimatePresence,motion } from "framer-motion"
+import UploadFileBtn from "./UploadFileBtn";
+// import UploadBtn from "./UploadBtn";
+interface Prop{
+    show: boolean
+    changeFile: (e?: React.ChangeEvent<HTMLInputElement>)=>void
+}
+const UploadBtnWrap = ({show,changeFile}:Prop) => {
+    type Upload={
+        change: (e?: React.ChangeEvent<HTMLInputElement>)=>void
+        accept: string
+        children: ReactNode
+        id:string
+    }
+    const sendUpload: Upload[]= [
+        {change: changeFile,accept:"audio/*",children: <AudioLines />,id: "audio"},
+        {change: changeFile,accept:"image/*",children: <Image/>,id: "image"},
+        {change: changeFile,accept:"video/*",children: <Video/>,id: "video"},
+        {change: changeFile,accept:".json, .xml, .yaml, .yml, .log, .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .csv, .txt, .rtf,.dwg, .dxf, .step, .stp, .igs, .iges, .sldprt, .sldasm, .ipt, .iam, .obj, .3ds, .skp, .fbx ",children: <Files/>,id: "file"},
+    ]
+
+    return ( 
+        <div className="absolute top-0 z-20 w-fit duration-500 transition-all transform  flex gap-3 items-center justify-center ">
+                {sendUpload?.map((item,index)=>(
+                    <AnimatePresence key={item.id}>
+                        {show&&
+                            <motion.div
+                            key={item.id}
+                            initial={{opacity: 0,x:10}}
+                            animate={{opacity: 1,x:0}}
+                            exit={{opacity: 0,x:-10}}
+                            transition={{
+                                delay: index*0.2
+                            }}
+                            >
+                                    <UploadFileBtn
+                                    changeFile={item.change}
+                                    accept={item.accept}
+                                    children={item.children}
+                                    id={item.id}
+                                    />
+                            </motion.div>
+                        }
+                    </AnimatePresence>
+                    ))}
+        </div>
+     );
+}
+ 
+export default UploadBtnWrap;
