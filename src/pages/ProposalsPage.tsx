@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,142 +20,100 @@ import {
   AlertCircle,
   Users
 } from 'lucide-react';
+import { Proposal } from '@/utils/types';
+import { handleDownload } from '@/utils/handleDownload';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux/store';
 
-interface Proposal {
-  id: string;
-  title: string;
-  client: string;
-  projectType: string;
-  value: number;
-  status: 'draft' | 'sent' | 'under-review' | 'accepted' | 'rejected';
-  createdAt: Date;
-  dueDate: Date;
-  lastModified: Date;
-  description: string;
-  assignedTo: string[];
-  priority: 'high' | 'medium' | 'low';
-}
+
 
 const mockProposals: Proposal[] = [
   {
     id: '1',
-    title: 'Commercial Office HVAC Upgrade',
+    project_uid: 'p1',
+    projectName: 'Commercial Office HVAC Upgrade',
     client: 'Tech Corp Inc.',
-    projectType: 'Retrofit',
-    value: 150000,
-    status: 'under-review',
-    createdAt: new Date('2024-01-10'),
-    dueDate: new Date('2024-02-15'),
-    lastModified: new Date('2024-01-18'),
+    projectType: 'commercial',
+    priority: 'high',
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-06-01'),
+    budget: '$150,000',
+    location: 'New York',
     description: 'Complete HVAC system upgrade for 50,000 sq ft office building',
-    assignedTo: ['John Doe', 'Sarah Wilson'],
-    priority: 'high'
+    systems: ['HVAC', 'Electrical'],
+    createdAt: '2024-01-10',
+    conversation: '',
+    pdf: undefined
   },
   {
     id: '2',
-    title: 'Hospital Critical Systems Installation',
+    project_uid: 'p2',
+    projectName: 'Hospital Critical Systems Installation',
     client: 'City Medical Center',
-    projectType: 'New Installation',
-    value: 500000,
-    status: 'sent',
-    createdAt: new Date('2024-01-05'),
-    dueDate: new Date('2024-02-01'),
-    lastModified: new Date('2024-01-15'),
+    projectType: 'institutional',
+    priority: 'high',
+    startDate: new Date('2024-02-01'),
+    endDate: new Date('2024-08-01'),
+    budget: '$500,000',
+    location: 'Los Angeles',
     description: 'Installation of critical HVAC systems for new medical facility',
-    assignedTo: ['Mike Johnson', 'David Lee'],
-    priority: 'high'
+    systems: ['HVAC', 'Plumbing'],
+    createdAt: '2024-01-05',
+    conversation: '',
+    pdf: undefined
   },
   {
     id: '3',
-    title: 'School District HVAC Maintenance',
+    project_uid: 'p3',
+    projectName: 'School District HVAC Maintenance',
     client: 'Metro School District',
-    projectType: 'Maintenance Contract',
-    value: 75000,
-    status: 'accepted',
-    createdAt: new Date('2023-12-20'),
-    dueDate: new Date('2024-01-31'),
-    lastModified: new Date('2024-01-12'),
+    projectType: 'institutional',
+    priority: 'medium',
+    startDate: new Date('2023-12-01'),
+    endDate: new Date('2024-12-01'),
+    budget: '$75,000',
+    location: 'Chicago',
     description: 'Annual maintenance contract for 12 school buildings',
-    assignedTo: ['Emma Davis', 'Tom Anderson'],
-    priority: 'medium'
+    systems: ['HVAC'],
+    createdAt: '2023-12-20',
+    conversation: '',
+    pdf: undefined
   },
   {
     id: '4',
-    title: 'Manufacturing Plant HVAC Design',
+    project_uid: 'p4',
+    projectName: 'Manufacturing Plant HVAC Design',
     client: 'Industrial Solutions LLC',
-    projectType: 'Design Build',
-    value: 300000,
-    status: 'draft',
-    createdAt: new Date('2024-01-15'),
-    dueDate: new Date('2024-03-01'),
-    lastModified: new Date('2024-01-20'),
+    projectType: 'industrial',
+    priority: 'medium',
+    startDate: new Date('2024-03-01'),
+    endDate: new Date('2024-09-01'),
+    budget: '$300,000',
+    location: 'Houston',
     description: 'Complete HVAC design and installation for new manufacturing facility',
-    assignedTo: ['John Doe', 'Bob Chen'],
-    priority: 'medium'
+    systems: ['HVAC', 'Design'],
+    createdAt: '2024-01-15',
+    conversation: '',
+    pdf: undefined
   }
 ];
 
 export default function ProposalsPage() {
-  const [proposals] = useState<Proposal[]>(mockProposals);
+  const [proposals,setProposals] = useState<Proposal[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [view, setView] = useState<string>('');
   const [activeTab, setActiveTab] = useState('active');
-
-  const filteredProposals = proposals.filter(proposal => {
-    const matchesSearch = proposal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         proposal.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         proposal.projectType.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || proposal.status === statusFilter;
-    const matchesTab = activeTab === 'all' || 
-                      (activeTab === 'active' && ['draft', 'sent', 'under-review'].includes(proposal.status)) ||
-                      (activeTab === 'completed' && ['accepted', 'rejected'].includes(proposal.status));
-    return matchesSearch && matchesStatus && matchesTab;
-  });
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'accepted': return CheckCircle;
-      case 'rejected': return XCircle;
-      case 'under-review': return AlertCircle;
-      case 'sent': return Send;
-      default: return Edit;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'accepted': return 'bg-success/10 text-success';
-      case 'rejected': return 'bg-destructive/10 text-destructive';
-      case 'under-review': return 'bg-warning/10 text-warning';
-      case 'sent': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'draft': return 'bg-muted text-muted-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'low': return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getDaysUntilDue = (dueDate: Date) => {
-    const today = new Date();
-    const diffTime = dueDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+  const stateProposals = useSelector((state:RootState)=>state.proposal.proposal)
+  // const proposals = proposals.filter(proposal => {
+  //   const matchesSearch = proposal.projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||proposal.client.toLowerCase().includes(searchQuery.toLowerCase()) ||proposal.projectType.toLowerCase().includes(searchQuery.toLowerCase());
+  //   const matchesStatus = statusFilter === 'all';
+  //   const matchesTab = activeTab === 'all' || activeTab === 'active' || activeTab === 'completed';
+  //   return matchesSearch && matchesStatus && matchesTab;
+  // });
+  useEffect(()=>{
+    setProposals(stateProposals)
+  },[stateProposals])
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -184,35 +142,28 @@ export default function ProposalsPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filters
-          </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        {/* <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="active">Active Proposals</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
           <TabsTrigger value="all">All Proposals</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
         <TabsContent value={activeTab} className="space-y-6">
-          {filteredProposals.length > 0 ? (
+          {proposals.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredProposals.map((proposal) => {
-                const StatusIcon = getStatusIcon(proposal.status);
-                const daysUntilDue = getDaysUntilDue(proposal.dueDate);
-                
+              {proposals.map((proposal) => {
                 return (
                   <Card key={proposal.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <CardTitle className="text-lg">{proposal.title}</CardTitle>
-                            <Badge className={getPriorityColor(proposal.priority)}>
+                            <CardTitle className="text-lg">{proposal.projectName}</CardTitle>
+                            <Badge className="bg-muted text-muted-foreground">
                               {proposal.priority}
                             </Badge>
                           </div>
@@ -221,52 +172,36 @@ export default function ProposalsPage() {
                           </CardDescription>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <Building className="w-3 h-3" />
                               {proposal.projectType}
                             </div>
                             <div className="flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              {formatCurrency(proposal.value)}
+                              {proposal.budget}
                             </div>
                           </div>
                         </div>
-                        <Badge className={getStatusColor(proposal.status)}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {proposal.status.replace('-', ' ')}
-                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <p className="text-muted-foreground text-sm line-clamp-2">
                         {proposal.description}
                       </p>
-                      
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground">
-                          <Users className="w-3 h-3" />
-                          <span>{proposal.assignedTo.join(', ')}</span>
+                          {proposal.location}
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="w-3 h-3" />
-                          <span>Due in {daysUntilDue} days</span>
+                          {proposal.startDate?.toLocaleDateString()} - {proposal.endDate?.toLocaleDateString()}
                         </div>
                       </div>
-
                       <div className="flex items-center gap-2 pt-2 border-t">
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button onClick={()=>window.open(proposal.pdf.url, "_blank")} variant="outline" size="sm" className="flex-1">
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() =>handleDownload(String(proposal.pdf.url),proposal.pdf.name)}>
+                          
+                          Download
                         </Button>
-                        {proposal.status === 'draft' && (
-                          <Button size="sm" className="flex-1">
-                            <Send className="w-4 h-4 mr-1" />
-                            Send
-                          </Button>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

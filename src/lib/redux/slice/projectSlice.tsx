@@ -28,7 +28,6 @@ const projectSlice = createSlice({
             }
             action.payload.conversation.push(firstMessage)
             state.project = addtoproject
-            console.log(state.project)
           },
           updateProject: (state, action: PayloadAction<{ message: Message; uid: string }>) => {
             const uid = action.payload.uid.toLowerCase();
@@ -38,7 +37,6 @@ const projectSlice = createSlice({
 
             if (project) {
                 project.conversation.push(message);
-                console.log(project)
             } else {
                 console.warn(`No project found with uid: ${uid}`);
             }

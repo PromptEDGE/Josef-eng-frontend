@@ -190,8 +190,8 @@ export default function StandardsPage() {
                   return (
                     <Card key={standard.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
+                        <div className="flex flex-wrap gap-3 items-start justify-between">
+                          <div className="flex flex-wrap gap-3 items-start gap-3">
                             <div className="p-2 bg-primary/10 rounded-lg">
                               <CategoryIcon className="w-5 h-5 text-primary" />
                             </div>

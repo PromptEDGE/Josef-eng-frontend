@@ -39,18 +39,19 @@ const projectNavItems = [
 ];
 
 
-const toolsNavItems = [
-  { title: 'Proposals', url: '/proposals', icon: Users, badge: '3' },
-  // { title: 'AI Assistant', url: '/ai-assistant', icon: Brain },
-];
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
   const library = useSelector((state:RootState)=>state.library.library)
+  const proposal = useSelector((state:RootState)=>state.proposal.proposal)
   const { state } = useSidebar();
   const location = useLocation();
   const collapsed = state === 'collapsed';
   
+  const toolsNavItems = [
+    { title: 'Proposals', url: '/proposals', icon: Users, badge: proposal.length },
+    // { title: 'AI Assistant', url: '/ai-assistant', icon: Brain },
+  ];
   const libraryItems = [
     { title: 'Videos', url: '/library/videos', icon: Video, badge: library.filter((item)=>item.type==="video").length },
     { title: 'Audio Files', url: '/library/audio', icon: Mic, badge: library.filter((item)=>item.type==="audio").length },

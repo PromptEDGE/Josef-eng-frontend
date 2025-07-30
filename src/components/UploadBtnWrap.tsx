@@ -22,17 +22,19 @@ const UploadBtnWrap = ({show,changeFile}:Prop) => {
     ]
 
     return ( 
-        <div className="absolute top-0 z-20 w-fit duration-500 transition-all transform  flex gap-3 items-center justify-center ">
+        <div className="absolute top-[-180px] z-20 w-fit duration-500 transition-all transform  flex flex-col gap-3 items-center justify-center ">
                 {sendUpload?.map((item,index)=>(
                     <AnimatePresence key={item.id}>
                         {show&&
                             <motion.div
                             key={item.id}
-                            initial={{opacity: 0,x:10}}
-                            animate={{opacity: 1,x:0}}
-                            exit={{opacity: 0,x:-10}}
+                            initial={{opacity: 0,y:50}}
+                            animate={{opacity: 1,y:0}}
+                            exit={{opacity: 0,y:-50}}
                             transition={{
-                                delay: index*0.2
+                                delay: index*0.2,
+                                duration: index*0.2,
+                                ease: "easeInOut"
                             }}
                             >
                                     <UploadFileBtn

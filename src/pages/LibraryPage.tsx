@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import {motion,AnimatePresence} from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,11 +19,14 @@ import {
   FileText,
   Calendar,
   Clock,
-  File
+  File,
+  X
 } from 'lucide-react';
 import { LibraryItem } from '@/utils/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
+import DisplayFileModal from '@/components/displayFileModal';
+import { handleDownload } from '@/utils/handleDownload';
 
 
 
@@ -33,10 +37,10 @@ export default function LibraryPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedFile,setSelectedFile] = useState<LibraryItem|null>(null)
   
   const filteredItems = libraryItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||  item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesType = selectedType === 'all' || item.type === selectedType;
     const matchesTab = activeTab === 'all' || item.type === activeTab;
     return matchesSearch && matchesType && matchesTab;
@@ -60,11 +64,16 @@ export default function LibraryPage() {
     }
   };
 
+  const selectedItem = (select: LibraryItem)=>{
+    console.log(select)
+    setSelectedFile(select)
+  }
+
   const ItemCard = ({ item }: { item: LibraryItem }) => {
     const TypeIcon = getTypeIcon(item.type);
     
     return (
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="hover:shadow-lg transition-shadow relative ">
         <CardHeader className="pb-3 w-full ">
           <div className="w-full flex flex-wrap gap-1 items-start justify-between">
             <div className="flex items-start gap-3">
@@ -88,12 +97,12 @@ export default function LibraryPage() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm">
+              <Button onClick={()=>selectedItem(item)}  variant="outline" size="sm">
                 {item.type === 'video' ? <Play className="w-4 h-4" /> : 
                  item.type === 'audio' ? <Play className="w-4 h-4" /> : 
                  <Eye className="w-4 h-4" />}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button onClick={()=>handleDownload(item.thumbnail,item.type)} variant="outline" size="sm">
                 <Download className="w-4 h-4" />
               </Button>
             </div>
@@ -260,6 +269,18 @@ export default function LibraryPage() {
           )}
         </TabsContent>
       </Tabs>
+      <AnimatePresence>
+        {selectedFile&&
+        <motion.div
+          initial={{opacity: 0,scale: 0.9}}
+          animate={{opacity: 1,scale: 1}}
+          exit={{opacity: 0,scale: 0.9}}
+        className="w-full h-dvh bg-white/80 flex items-center justify-center fixed inset-0 ">
+          <X onClick={()=>setSelectedFile(null)} className='cursor-pointer absolute right-5 top-5 ' />
+          <DisplayFileModal download={handleDownload} item={selectedFile} />
+        </motion.div>
+        }
+      </AnimatePresence>
     </div>
   );
 }

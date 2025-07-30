@@ -156,7 +156,11 @@ export default function NewProjectPage() {
     return formData.name.trim() !== '' && 
     formData.client.trim() !== '' && 
     formData.type !== '' && 
-    formData.priority !== ''
+    formData.priority !== ''&&
+    formData.description.trim()&&
+    formData.budget.trim()&&
+    formData.location.trim()&&
+    formData.systems.length !== 0 
     //  formData.startDate &&
     //  formData.endDate;
   };
@@ -183,10 +187,10 @@ export default function NewProjectPage() {
     <div className="p-6 flex flex-col items-center justify-center space-y-6">
       <div className="w-full flex-wrap lg:flex-nowrap flex gap-3 items-center justify-between">
         <div className="flex flex-wrap lg:flex-nowrap  items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/projects')}>
+          {/* <Button variant="ghost" size="sm" onClick={() => navigate('/projects')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Projects
-          </Button>
+          </Button> */}
           <div>
             <h1 className="text-2xl font-bold text-foreground">New Project</h1>
             <p className="text-muted-foreground">

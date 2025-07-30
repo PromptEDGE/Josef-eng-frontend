@@ -145,7 +145,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
           style={{ backgroundImage: `url(${heroImage})` }}
         />
         <div className="relative z-10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center gap-2 justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Welcome to Your AI Engineering Assistant</h1>
               <p className="text-primary-foreground/80 text-lg">
@@ -155,7 +155,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
             <div className="flex gap-2">
               <Button 
                 variant="secondary" 
-                onClick={() => onViewChange('ai-assistant')}
+                onClick={() => onViewChange('new')}
                 className="shadow-elegant"
               >
                 <Brain className="w-4 h-4 mr-2" />

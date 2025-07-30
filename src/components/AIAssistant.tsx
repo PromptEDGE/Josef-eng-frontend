@@ -26,11 +26,12 @@ import MessageFile from './MessageFile';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { useParams } from 'react-router-dom';
-import { LibraryItem, Message } from '@/utils/types';
+import { LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
 import { updateProject } from '@/lib/redux/slice/projectSlice';
 import { getFile } from '@/lib/redux/slice/librarySlice';
 import UploadBtnWrap from './UploadBtnWrap';
 import { getFileReaderUrl } from '@/utils/fileReader';
+import { createNewProposal } from '@/lib/redux/slice/proposalSlice';
 
 
 
@@ -69,6 +70,7 @@ export function AIAssistant() {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [showUpload, setShowUpload] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [project,setProject] = useState<ProjectData|null>(null)
   const { toast } = useToast();
 
   const scrollToBottom = () => {
@@ -77,6 +79,7 @@ export function AIAssistant() {
   const findProject = useCallback(()=>{
     const project = projects.find(item=>item.uid.toLowerCase()===String(params.uid.toLowerCase()))
     if(project){
+      setProject(project)
       setMessages(project.conversation)
     }
   },[params.uid,projects])
@@ -100,41 +103,40 @@ export function AIAssistant() {
     // if (!inputValue.trim() || isLoading) return;
     let localUrl: string;
     // if there is file send also and turn to string
-  if (file) {
-    const filedata = new FormData();
-    filedata.append('file', file);
+    if (file) {
+      const filedata = new FormData();
+      filedata.append('file', file);
 
-    const formFile = filedata.get('file') as File;
-    localUrl = await getFileReaderUrl(formFile);
-    const library: LibraryItem = {
-      id: uuidv4(),
-      name: file.name,
-      type: getType(file.type),
-      size: readableSize(file.size),
-      // uploadedBy: 'current-user-id', // Replace with actual user ID
-      uploadedAt: new Date(),
-      tags: [],
-      thumbnail: localUrl, // Optional: assign local preview to thumbnail
-    };
-
-    // If it's a video or audio file, get the duration
-    if (file.type.startsWith('video') || file.type.startsWith('audio')) {
-      const media = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
-      media.preload = 'metadata';
-      media.onloadedmetadata = () => {
-        const duration = media.duration;
-        const minutes = Math.floor(duration / 60);
-        const seconds = Math.floor(duration % 60);
-        library.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      const formFile = filedata.get('file') as File;
+      localUrl = await getFileReaderUrl(formFile);
+      const library: LibraryItem = {
+        id: uuidv4(),
+        name: file.name,
+        type: getType(file.type),
+        size: readableSize(file.size),
+        // uploadedBy: 'current-user-id', // Replace with actual user ID
+        uploadedAt: new Date(),
+        tags: [],
+        thumbnail: localUrl, // Optional: assign local preview to thumbnail
       };
-      media.src = localUrl;
-    } else {
-      console.log('LibraryItem:', library);
+
+      // If it's a video or audio file, get the duration
+      if (file.type.startsWith('video') || file.type.startsWith('audio')) {
+        const media = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
+        media.preload = 'metadata';
+        media.onloadedmetadata = () => {
+          const duration = media.duration;
+          const minutes = Math.floor(duration / 60);
+          const seconds = Math.floor(duration % 60);
+          library.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        };
+        media.src = localUrl;
+      } else {
+        console.log('LibraryItem:', library);
+      }
+
+    await dispatch(getFile(library))
     }
-
-   await dispatch(getFile(library))
-  }
-
     const userMessage: Message = {
       id: uuidv4(),
       type: 'user',
@@ -152,20 +154,22 @@ export function AIAssistant() {
     setPreview("")
 
     // Simulate AI response
+    if(inputValue.trim()){
       const assistantMessage: Message = {
-        id: uuidv4(),
-        type: 'assistant',
-        content: {
-         text: inputValue && generateAIResponse(inputValue),
-          fileUrl: localUrl
-        },
-        timestamp: new Date().toISOString(),
-        category: detectCategory(inputValue),
-        confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
-      };
+          id: uuidv4(),
+          type: 'assistant',
+          content: {
+           text: inputValue.trim() && generateAIResponse(inputValue),
+            // fileUrl: localUrl
+          },
+          timestamp: new Date().toISOString(),
+          category: detectCategory(inputValue),
+          confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
+        };
+        await dispatch(updateProject({message: assistantMessage,uid:params.uid}))
+        setMessages(prev => [...prev, assistantMessage]);
+    } 
       
-      await dispatch(updateProject({message: assistantMessage,uid:params.uid}))
-      setMessages(prev => [...prev, assistantMessage]);
       setIsLoading(false);
   };
 
@@ -291,7 +295,38 @@ Could you provide more specific details about your project requirements? This wi
       setPreview(url)
     }
   }
-
+  const createProposal = async (conversation: string)=> {
+    const { 
+        uid:project_uid,
+        name: projectName,
+        type:projectType,
+        priority,
+        startDate,
+        endDate,
+        budget,
+        description,
+        systems,
+        location,
+        client
+    } = project
+    const create: Proposal ={
+      id: uuidv4(),
+      client,
+      project_uid,
+      projectName,
+      projectType,
+      priority,
+      startDate,
+      endDate,
+      budget,
+      location,
+      description,
+      systems,
+      createdAt: new Date().toISOString(),
+      conversation,
+    } 
+    await dispatch(createNewProposal(create))
+  }
   useEffect(() => {
     findProject()
     scrollToBottom();
@@ -299,14 +334,14 @@ Could you provide more specific details about your project requirements? This wi
   return (
     <div className="p-6 h-full flex flex-col">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-2">AI Engineering Assistant</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Engineering Assistant</h1>
         <p className="text-muted-foreground">
           Get instant help with calculations, standards, design, and troubleshooting
         </p>
       </div>
 
       {/* Quick Questions */}
-      <Card className="p-4 mb-6">
+      {/* <Card className="p-4 mb-6">
         <h3 className="font-semibold text-foreground mb-3">Quick Questions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {predefinedQuestions.map((item, index) => (
@@ -322,7 +357,7 @@ Could you provide more specific details about your project requirements? This wi
             </Button>
           ))}
         </div>
-      </Card>
+      </Card> */}
 
       {/* Messages */}
       <Card className="flex-1 flex flex-col">
@@ -353,6 +388,7 @@ Could you provide more specific details about your project requirements? This wi
                     {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />}
                     {message.content.text&&<div className="whitespace-pre-wrap text-sm">{message.content.text}</div>}
                     
+                    
                     {message.type === 'assistant' && (
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
                         <div className="flex items-center gap-2">
@@ -381,6 +417,9 @@ Could you provide more specific details about your project requirements? This wi
                           </Button>
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                             <ThumbsDown className="w-3 h-3" />
+                          </Button>
+                          <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="h-6 w-6 p-0" >
+                            create proposal
                           </Button>
                         </div>
                       </div>
