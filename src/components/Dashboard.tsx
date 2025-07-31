@@ -262,7 +262,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
           <Card className="p-6">
@@ -295,7 +295,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
         </div>
 
         {/* AI Insights */}
-        <div>
+        {/* <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">AI Insights</h2>
           <Card className="p-6">
             <div className="space-y-4">
@@ -336,7 +336,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
               </div>
             </div>
           </Card>
-        </div>
+        </div> */}
       </div>
     </div>
   );
