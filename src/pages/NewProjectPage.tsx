@@ -34,11 +34,13 @@ import {
   Zap,
   Droplets,
   X,
+  FolderCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ProjectData } from '@/utils/types';
+import { ActivityItem, ProjectData } from '@/utils/types';
 import { useDispatch } from 'react-redux';
 import { createNew } from '@/lib/redux/slice/projectSlice';
+import { addActivity } from '@/lib/redux/slice/activitySlice';
 
 interface ProjectFormData {
   name: string;
@@ -177,8 +179,14 @@ export default function NewProjectPage() {
       conversation: []
     }
     await dispatch(createNew(projectData))
-    console.log(projectData)
-    console.log('Creating project:', formData);
+    const activity:ActivityItem = {
+      icon: FolderCheck,
+      id: uuidv4(),
+      type: "document",
+      title: `A new project has been created. (${projectData.name})`,
+      time: new Date().toISOString(),
+    }
+    await dispatch(addActivity(activity))
     // Here you would send the project data to your backend
     navigate(`/project/${projectData.uid}`);
   };
@@ -228,7 +236,9 @@ export default function NewProjectPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="project-name">Project Name *</Label>
+                  <Label htmlFor="project-name">Project Name 
+                    <span className="text-gray-300 ml-1">(required)</span>
+                  </Label>
                   <Input
                     id="project-name"
                     placeholder="Enter project name"
@@ -237,7 +247,9 @@ export default function NewProjectPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="client">Client *</Label>
+                  <Label htmlFor="client">Client 
+                    <span className="text-gray-300 ml-1">(required)</span>
+                  </Label>
                   <Input
                     id="client"
                     placeholder="Enter client name"
@@ -249,7 +261,9 @@ export default function NewProjectPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Project Type *</Label>
+                  <Label>Project Type 
+                    <span className="text-gray-300 ml-1">(required)</span>
+                  </Label>
                   <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select project type" />
@@ -267,7 +281,9 @@ export default function NewProjectPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Priority *</Label>
+                  <Label>Priority 
+                    <span className="text-gray-300 ml-1">(required)</span>
+                  </Label>
                   <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select priority" />
@@ -285,7 +301,9 @@ export default function NewProjectPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Start Date *</Label>
+                  <Label>Start Date 
+                    <span className="text-gray-300 ml-1">(optional)</span>
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -310,7 +328,9 @@ export default function NewProjectPage() {
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date *</Label>
+                  <Label>End Date 
+                    <span className="text-gray-300 ml-1">(optional)</span>
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -338,7 +358,9 @@ export default function NewProjectPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="budget">Budget (USD)</Label>
+                  <Label htmlFor="budget">Budget (USD)
+                    <span className="text-gray-300 ml-1">(required)</span>
+                  </Label>
                   <Input
                     id="budget"
                     type="number"
@@ -348,7 +370,9 @@ export default function NewProjectPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location">Location
+                    <span className="text-gray-300 ml-1">(required)</span>
+                  </Label>
                   <Input
                     id="location"
                     placeholder="City, State"
@@ -359,7 +383,9 @@ export default function NewProjectPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Project Description</Label>
+                <Label htmlFor="description">Project Description
+                  <span className="text-gray-300 ml-1">(required)</span>
+                </Label>
                 <Textarea
                   id="description"
                   placeholder="Describe the project scope and requirements..."
@@ -377,6 +403,7 @@ export default function NewProjectPage() {
               <CardTitle className="flex items-center gap-2">
                 <Wind className="w-5 h-5" />
                 HVAC Systems
+                <span className="text-gray-300 ml-1">(required)</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
