@@ -1,3 +1,5 @@
+import { LucideProps } from "lucide-react";
+
 export interface ProjectData {
   name: string;
   client: string;
@@ -58,4 +60,14 @@ export interface Proposal {
     file: Blob,
     url: string
   }
+}
+
+
+export interface ActivityItem {
+  id: string;
+  type: 'document' | 'image' | 'video' | 'other'; // you can expand these as needed
+  title: string;
+  time: string;
+  // status: 'completed' | 'pending' | 'in-progress'; // add more statuses if needed
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }

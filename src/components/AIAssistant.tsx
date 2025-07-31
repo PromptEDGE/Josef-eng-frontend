@@ -26,12 +26,13 @@ import MessageFile from './MessageFile';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { useParams } from 'react-router-dom';
-import { LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
+import { ActivityItem, LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
 import { updateProject } from '@/lib/redux/slice/projectSlice';
 import { getFile } from '@/lib/redux/slice/librarySlice';
 import UploadBtnWrap from './UploadBtnWrap';
 import { getFileReaderUrl } from '@/utils/fileReader';
 import { createNewProposal } from '@/lib/redux/slice/proposalSlice';
+import { addActivity } from '@/lib/redux/slice/activitySlice';
 
 
 
@@ -99,43 +100,52 @@ export function AIAssistant() {
       if (mime.startsWith('audio')) return 'audio';
       return 'document';
     };
+
   const handleSendMessage = async () => {
     // if (!inputValue.trim() || isLoading) return;
     let localUrl: string;
     // if there is file send also and turn to string
     if (file) {
-      const filedata = new FormData();
-      filedata.append('file', file);
+        const filedata = new FormData();
+        filedata.append('file', file);
 
-      const formFile = filedata.get('file') as File;
-      localUrl = await getFileReaderUrl(formFile);
-      const library: LibraryItem = {
-        id: uuidv4(),
-        name: file.name,
-        type: getType(file.type),
-        size: readableSize(file.size),
-        // uploadedBy: 'current-user-id', // Replace with actual user ID
-        uploadedAt: new Date(),
-        tags: [],
-        thumbnail: localUrl, // Optional: assign local preview to thumbnail
-      };
-
-      // If it's a video or audio file, get the duration
-      if (file.type.startsWith('video') || file.type.startsWith('audio')) {
-        const media = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
-        media.preload = 'metadata';
-        media.onloadedmetadata = () => {
-          const duration = media.duration;
-          const minutes = Math.floor(duration / 60);
-          const seconds = Math.floor(duration % 60);
-          library.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const formFile = filedata.get('file') as File;
+        localUrl = await getFileReaderUrl(formFile);
+        const library: LibraryItem = {
+          id: uuidv4(),
+          name: file.name,
+          type: getType(file.type),
+          size: readableSize(file.size),
+          // uploadedBy: 'current-user-id', // Replace with actual user ID
+          uploadedAt: new Date(),
+          tags: [],
+          thumbnail: localUrl, // Optional: assign local preview to thumbnail
         };
-        media.src = localUrl;
-      } else {
-        console.log('LibraryItem:', library);
-      }
 
-    await dispatch(getFile(library))
+        // If it's a video or audio file, get the duration
+        if (file.type.startsWith('video') || file.type.startsWith('audio')) {
+          const media = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
+          media.preload = 'metadata';
+          media.onloadedmetadata = () => {
+            const duration = media.duration;
+            const minutes = Math.floor(duration / 60);
+            const seconds = Math.floor(duration % 60);
+            library.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          };
+          media.src = localUrl;
+        } else {
+          console.log('LibraryItem:', library);
+        }
+
+      await dispatch(getFile(library))
+      const activity:ActivityItem = {
+        icon: FileText,
+        id: uuidv4(),
+        type: "document",
+        title: "You uploaded a document to your library.",
+        time: new Date().toISOString(),
+      }
+      await dispatch(addActivity(activity))
     }
     const userMessage: Message = {
       id: uuidv4(),
@@ -326,6 +336,14 @@ Could you provide more specific details about your project requirements? This wi
       conversation,
     } 
     await dispatch(createNewProposal(create))
+    const activity:ActivityItem = {
+      icon: FileText,
+      id: uuidv4(),
+      type: "document",
+      title: "You have created a proposal.",
+      time: new Date().toISOString(),
+    }
+    await dispatch(addActivity(activity))
   }
   useEffect(() => {
     findProject()

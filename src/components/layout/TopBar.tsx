@@ -22,8 +22,11 @@ import {
   Sun,
   HelpCircle,
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux/store';
 
 export function TopBar() {
+  const activities = useSelector((state:RootState)=>state.activites.activities)
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
 
@@ -65,7 +68,7 @@ export function TopBar() {
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 relative">
               <Bell className="w-4 h-4" />
               <Badge className="absolute -top-1 -right-1 h-4 w-4 text-xs p-0 flex items-center justify-center">
-                3
+                {activities.length}
               </Badge>
             </Button>
           </DropdownMenuTrigger>

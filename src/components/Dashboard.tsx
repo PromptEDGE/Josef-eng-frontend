@@ -18,6 +18,10 @@ import {
   Target
 } from 'lucide-react';
 import heroImage from '@/assets/engineering-hero.jpg';
+import { useEffect, useState } from 'react';
+import { ActivityItem } from '@/utils/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux/store';
 
 interface DashboardProps {
   onViewChange: (view: string) => void;
@@ -40,58 +44,58 @@ const stats = [
     icon: Target,
     color: 'text-accent'
   },
-  {
-    id: 'calculations',
-    label: 'Calculations Done',
-    value: '156',
-    change: '+24',
-    icon: Calculator,
-    color: 'text-success'
-  },
-  {
-    id: 'efficiency',
-    label: 'Time Saved (Hours)',
-    value: '342',
-    change: '+67',
-    icon: Clock,
-    color: 'text-warning'
-  }
+  // {
+  //   id: 'calculations',
+  //   label: 'Calculations Done',
+  //   value: '156',
+  //   change: '+24',
+  //   icon: Calculator,
+  //   color: 'text-success'
+  // },
+  // {
+  //   id: 'efficiency',
+  //   label: 'Time Saved (Hours)',
+  //   value: '342',
+  //   change: '+67',
+  //   icon: Clock,
+  //   color: 'text-warning'
+  // }
 ];
 
-const recentActivity = [
-  {
-    id: 1,
-    type: 'document',
-    title: 'ASHRAE 90.1 Standard uploaded',
-    time: '2 hours ago',
-    status: 'completed',
-    icon: FileText
-  },
-  {
-    id: 2,
-    type: 'calculation',
-    title: 'Cooling load calculation for Office Building A',
-    time: '4 hours ago',
-    status: 'completed',
-    icon: Calculator
-  },
-  {
-    id: 3,
-    type: 'proposal',
-    title: 'Chiller system proposal generated',
-    time: '6 hours ago',
-    status: 'pending',
-    icon: Users
-  },
-  {
-    id: 4,
-    type: 'analysis',
-    title: 'Energy efficiency analysis completed',
-    time: '1 day ago',
-    status: 'completed',
-    icon: TrendingUp
-  }
-];
+// const recentActivity = [
+//   {
+//     id: 1,
+//     type: 'document',
+//     title: 'ASHRAE 90.1 Standard uploaded',
+//     time: '2 hours ago',
+//     status: 'completed',
+//     icon: FileText
+//   },
+//   {
+//     id: 2,
+//     type: 'calculation',
+//     title: 'Cooling load calculation for Office Building A',
+//     time: '4 hours ago',
+//     status: 'completed',
+//     icon: Calculator
+//   },
+//   {
+//     id: 3,
+//     type: 'proposal',
+//     title: 'Chiller system proposal generated',
+//     time: '6 hours ago',
+//     status: 'pending',
+//     icon: Users
+//   },
+//   {
+//     id: 4,
+//     type: 'analysis',
+//     title: 'Energy efficiency analysis completed',
+//     time: '1 day ago',
+//     status: 'completed',
+//     icon: TrendingUp
+//   }
+// ];
 
 const quickActions = [
   {
@@ -102,22 +106,22 @@ const quickActions = [
     color: 'bg-primary',
     action: 'upload'
   },
-  {
-    id: 'calculate',
-    title: 'Run Calculations',
-    description: 'Perform load calculations, sizing, or energy analysis',
-    icon: Calculator,
-    color: 'bg-accent',
-    action: 'calculations'
-  },
-  {
-    id: 'ai-chat',
-    title: 'Ask AI Assistant',
-    description: 'Get instant answers to technical questions',
-    icon: Brain,
-    color: 'bg-success',
-    action: 'ai-assistant'
-  },
+  // {
+  //   id: 'calculate',
+  //   title: 'Run Calculations',
+  //   description: 'Perform load calculations, sizing, or energy analysis',
+  //   icon: Calculator,
+  //   color: 'bg-accent',
+  //   action: 'calculations'
+  // },
+  // {
+  //   id: 'ai-chat',
+  //   title: 'Ask AI Assistant',
+  //   description: 'Get instant answers to technical questions',
+  //   icon: Brain,
+  //   color: 'bg-success',
+  //   action: 'ai-assistant'
+  // },
   {
     id: 'generate',
     title: 'Generate Proposal',
@@ -136,6 +140,11 @@ const systemHealth = [
 ];
 
 export function Dashboard({ onViewChange }: DashboardProps) {
+  const activites = useSelector((state:RootState)=>state.activites.activities)
+  const [recentActivity,setRecentActivity] = useState<ActivityItem[]>([])
+  useEffect(()=>{
+    setRecentActivity(activites)
+  },[activites])
   return (
     <div className="p-6 space-y-6">
       {/* Hero Section */}
@@ -257,24 +266,31 @@ export function Dashboard({ onViewChange }: DashboardProps) {
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
           <Card className="p-6">
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-smooth">
-                  <div className="w-10 h-10 bg-gradient-card rounded-lg flex items-center justify-center">
-                    <activity.icon className="w-5 h-5 text-primary" />
+            {recentActivity.length===0&&
+              <div className="capitalize flex items-center justify-center w-full ">
+                no activities
+              </div>
+            }
+            {recentActivity.length>0&&
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-smooth">
+                    <div className="w-10 h-10 bg-gradient-card rounded-lg flex items-center justify-center">
+                      <activity.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{activity.title}</p>
+                      <p className="text-sm text-muted-foreground">{new Date(activity.time).toLocaleString()}</p>
+                    </div>
+                    {/* {activity.status === 'completed' ? (
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    ) : (
+                      <Clock className="w-5 h-5 text-warning" />
+                    )} */}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{activity.title}</p>
-                    <p className="text-sm text-muted-foreground">{activity.time}</p>
-                  </div>
-                  {activity.status === 'completed' ? (
-                    <CheckCircle className="w-5 h-5 text-success" />
-                  ) : (
-                    <Clock className="w-5 h-5 text-warning" />
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            }
           </Card>
         </div>
 
