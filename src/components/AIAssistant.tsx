@@ -403,7 +403,7 @@ Could you provide more specific details about your project requirements? This wi
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex justify-start items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -418,7 +418,7 @@ Could you provide more specific details about your project requirements? This wi
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                             <ThumbsDown className="w-3 h-3" />
                           </Button>
-                          <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="h-6 w-6 p-0" >
+                          <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="" >
                             create proposal
                           </Button>
                         </div>
