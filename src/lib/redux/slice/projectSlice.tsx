@@ -33,7 +33,7 @@ const projectSlice = createSlice({
             const uid = action.payload.uid.toLowerCase();
             const message = action.payload.message;
 
-            const project = state.project.find(p => p.uid.toLowerCase() === uid);
+            const project = state.project.find(p => p.uid.toLowerCase() === uid.toLowerCase());
 
             if (project) {
                 project.conversation.push(message);
