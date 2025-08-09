@@ -62,7 +62,6 @@ export const forgotPassword = async ({email, access}:{email:string,access:string
       }
     );
 
-    console.log("Response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error:", error.response?.data || error.message);

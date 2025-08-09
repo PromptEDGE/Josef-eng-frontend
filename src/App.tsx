@@ -44,15 +44,12 @@ const App = () => {
                 <SignInPage />
               </RoutesAuth>}
               />
+
             <Route path="/forgot-password" element={
-                <ForgotPasswordPage />
-              }
-              />
-            {/* <Route path="/forgot-password" element={
               <RoutesAuth>
                 <ForgotPasswordPage />
               </RoutesAuth>}
-              /> */}
+              />
             <Route index element={<Dashboard onViewChange={() => {}} />} />
             <Route path="standards" element={<StandardsPage />} />
             <Route path="projects/new" element={<NewProjectPage />} />
