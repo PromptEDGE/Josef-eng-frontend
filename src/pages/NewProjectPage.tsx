@@ -41,7 +41,7 @@ import { ActivityItem, CreateProjectType, ProjectData } from '@/utils/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { createNew } from '@/lib/redux/slice/projectSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
-import { createProject } from '@/api/project';
+import { createProject, getProjects } from '@/api/project';
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { RootState } from '@/lib/redux/store';
@@ -123,12 +123,15 @@ export default function NewProjectPage() {
     }));
   };
 
-
+  const { mutate: fetchProjects } =  useMutation({
+    mutationFn: (id:string)=>getProjects(id),
+  })
 
   const {mutate, isPending, data} = useMutation({
     mutationFn: (formData: CreateProjectType) => createProject(formData),
     onSuccess: (data) => {
-      dispatch(createNew(data));
+      fetchProjects(user?.access_token);
+      // dispatch(createNew(data));
       toast({
         title: "Success",
         description: "Project created successfully.",
