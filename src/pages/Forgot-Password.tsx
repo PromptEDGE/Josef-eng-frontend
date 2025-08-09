@@ -3,13 +3,18 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail } from "lucide-react";
+import { Mail, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ServicesCard from "@/components/ServiceCards";
+import { useMutation } from "@tanstack/react-query";
+import { forgotPassword } from "@/api/auth";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/redux/store";
 
 
 export default function ForgotPasswordPage() {
+	const user = useSelector((state: RootState) => state.localStorage.user);
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
 	const [submitted, setSubmitted] = useState(false);
@@ -22,13 +27,24 @@ export default function ForgotPasswordPage() {
 		return "";
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const {mutate,isPending} = useMutation({
+		mutationFn: ({email, access}:{email:string,access: string})=> forgotPassword({email, access}),
+		onSuccess: () => {
+			toast.success("Password reset link sent to your email.");
+		},
+		onError: (error) => {
+			setError(error.message);
+			toast.error("Failed to send reset link. " + error.message);
+		}
+	})
+
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const err = validateEmail(email);
 		setError(err);
 		if (!err) {
 			setSubmitted(true);
-			toast.success("Password reset link sent to your email.");
+			await mutate({ email, access: user?.access_token });
 		}
 	};
 
@@ -62,10 +78,18 @@ export default function ForgotPasswordPage() {
 								{error && <p className="mt-2 text-destructive text-sm">{error}</p>}
 							</div>
 							<Button
+								disabled={isPending}
 								type="submit"
 								className="w-full bg-gradient-primary text-primary-foreground shadow-elegant"
 							>
-								Send Reset Link
+								{isPending ? (
+									<span className="flex items-center justify-center">
+										<RefreshCcw className="animate-spin" />
+										Sending...
+									</span>
+								) : (
+									<span>Send Reset Link</span>
+								)}
 							</Button>
 							{submitted && (
 								<p className="mt-4 text-success text-center">Check your email for the reset link.</p>

@@ -108,7 +108,7 @@ export default function NewProjectPage() {
     systems: [],
   });
   const [error,setError] = useState<boolean>(false)
-  const [newTeamMember, setNewTeamMember] = useState('');
+  // const [newTeamMember, setNewTeamMember] = useState('');
 
   const handleInputChange = (field: keyof CreateProjectType, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
