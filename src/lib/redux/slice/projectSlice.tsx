@@ -33,7 +33,7 @@ const projectSlice = createSlice({
             const uid = action.payload.uid.toLowerCase();
             const message = action.payload.message;
 
-            const project = state.project.find(p => p.uid.toLowerCase() === uid.toLowerCase());
+            const project = state.project.find(p => p.id.toLowerCase() === uid.toLowerCase());
 
             if (project) {
                 project.conversation.push(message);
@@ -41,13 +41,11 @@ const projectSlice = createSlice({
                 console.warn(`No project found with uid: ${uid}`);
             }
         },
-        // loadProject:(state)=>{
-        //   const stored = localStorage.getItem("projects")
-        //   const parsed = stored ? JSON.parse(stored) : [];
-        //     state.project = parsed.filter((project: Pro) => project.message && project.message.length > 0)
-        // }
+        getAllProject:(state,action:PayloadAction<ProjectData[]>)=>{
+            state.project = action.payload;
+        }
 
     }
 })
-export const { createNew,updateProject } = projectSlice.actions;
+export const { createNew, updateProject, getAllProject } = projectSlice.actions;
 export default projectSlice.reducer

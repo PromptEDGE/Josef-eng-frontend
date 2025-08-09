@@ -24,9 +24,11 @@ import {
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
+import { NavLink } from 'react-router-dom';
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
+  const user = useSelector((state:RootState)=>state.localStorage.user)
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
 
@@ -34,7 +36,14 @@ export function TopBar() {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
   };
-
+  const handleLogout = () => {
+    // Clear user data and redirect to login
+    const user = localStorage.getItem('user');
+    if (user) {
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    }
+  };
   return (
     <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center justify-between gap-4">
       <SidebarTrigger className="h-8 w-8" />
@@ -63,7 +72,7 @@ export function TopBar() {
         </Button>
 
         {/* Notifications */}
-        <DropdownMenu>
+       {user&& <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 relative">
               <Bell className="w-4 h-4" />
@@ -97,16 +106,16 @@ export function TopBar() {
               <div className="text-xs text-muted-foreground">3 hours ago</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>}
 
         {/* User Menu */}
-        <DropdownMenu>
+        {user?<DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" />
                 <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                  JD
+                  {user.user.first_name[0]+user.user.last_name[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -123,12 +132,18 @@ export function TopBar() {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>:
+        <NavLink to={"/signin"} >
+          <Button variant="secondary" className='h-8 bg-gradient-to-r from-blue-400 to-blue-600 text-white ' >
+            sign in
+          </Button>
+        </NavLink>
+        }
       </div>
     </header>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Home
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getProjects } from '@/api/project';
 
 interface SidebarProps {
   activeView: string;

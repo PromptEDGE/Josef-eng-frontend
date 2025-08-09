@@ -78,7 +78,7 @@ export function AIAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   const findProject = useCallback(()=>{
-    const project = projects.find(item=>item.uid.toLowerCase()===String(params.uid.toLowerCase()))
+    const project = projects.find(item=>item.id.toLowerCase()===String(params.uid.toLowerCase()))
     if(project){
       setProject(project)
       setMessages(project.conversation)
@@ -271,9 +271,9 @@ Would you like specific equipment recommendations or load calculations?`;
 Could you provide more specific details about your project requirements? This will help me give you more targeted recommendations and calculations.`;
   };
 
-  const handleQuestionClick = (question: string) => {
-    setInputValue(question);
-  };
+  // const handleQuestionClick = (question: string) => {
+  //   setInputValue(question);
+  // };
 
   const toggleListening = () => {
     setIsListening(!isListening);
@@ -307,7 +307,7 @@ Could you provide more specific details about your project requirements? This wi
   }
   const createProposal = async (conversation: string)=> {
     const { 
-        uid:project_uid,
+        id:project_uid,
         name: projectName,
         type:projectType,
         priority,

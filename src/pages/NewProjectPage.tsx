@@ -37,37 +37,29 @@ import {
   FolderCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ActivityItem, ProjectData } from '@/utils/types';
-import { useDispatch } from 'react-redux';
+import { ActivityItem, CreateProjectType, ProjectData } from '@/utils/types';
+import { useDispatch, useSelector } from 'react-redux';
 import { createNew } from '@/lib/redux/slice/projectSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
+import { createProject } from '@/api/project';
+import { useMutation } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { RootState } from '@/lib/redux/store';
 
-interface ProjectFormData {
-  name: string;
-  client: string;
-  type: 'commercial' | 'industrial' | 'residential' | 'institutional' | '';
-  priority: 'low' | 'medium' | 'high' | 'urgent' | '';
-  startDate: Date | undefined;
-  endDate: Date | undefined;
-  budget: string;
-  location: string;
-  description: string;
-  systems: string[];
-  team: string[];
-}
+
 
 const projectTypes = [
-  { value: 'commercial', label: 'Commercial', icon: Building },
-  { value: 'industrial', label: 'Industrial', icon: Building },
-  { value: 'residential', label: 'Residential', icon: Building },
-  { value: 'institutional', label: 'Institutional', icon: Building },
+  { value: 'Commercial', label: 'Commercial', icon: Building },
+  { value: 'Industrial', label: 'Industrial', icon: Building },
+  { value: 'Residential', label: 'Residential', icon: Building },
+  { value: 'Institutional', label: 'Institutional', icon: Building },
 ];
 
 const priorityLevels = [
-  { value: 'low', label: 'Low', color: 'border-muted' },
-  { value: 'medium', label: 'Medium', color: 'border-warning' },
-  { value: 'high', label: 'High', color: 'border-accent' },
-  { value: 'urgent', label: 'Urgent', color: 'border-destructive' },
+  { value: 'Low', label: 'Low', color: 'border-muted' },
+  { value: 'Medium', label: 'Medium', color: 'border-warning' },
+  { value: 'High', label: 'High', color: 'border-accent' },
+  { value: 'Urgent', label: 'Urgent', color: 'border-destructive' },
 ];
 
 const systemOptions = [
@@ -86,22 +78,24 @@ const systemOptions = [
   { id: 'steam', name: 'Steam', icon: Thermometer },
 ];
 
-const teamMembers = [
-  'John Doe',
-  'Jane Smith',
-  'Mike Johnson',
-  'Sarah Wilson',
-  'Bob Chen',
-  'Alice Brown',
-  'David Lee',
-  'Emma Davis',
-  'Tom Anderson',
-];
-
+type CollectInfo = {
+  name: string,
+  client: string,
+  type: 'Commercial' | 'Industrial' | 'Residential' | 'Institutional'| '',
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent' | '',
+  startDate: Date|undefined,
+  endDate: Date|undefined,
+  budget: string,
+  location: string,
+  description: string,
+  systems: string[],
+}
 export default function NewProjectPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch()
-  const [formData, setFormData] = useState<ProjectFormData>({
+  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<CollectInfo>({
     name: '',
     client: '',
     type: '',
@@ -112,12 +106,11 @@ export default function NewProjectPage() {
     location: '',
     description: '',
     systems: [],
-    team: [],
   });
   const [error,setError] = useState<boolean>(false)
   const [newTeamMember, setNewTeamMember] = useState('');
 
-  const handleInputChange = (field: keyof ProjectFormData, value: any) => {
+  const handleInputChange = (field: keyof CreateProjectType, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -130,30 +123,41 @@ export default function NewProjectPage() {
     }));
   };
 
-  const handleTeamMemberAdd = (member: string) => {
-    if (member && !formData.team.includes(member)) {
-      setFormData(prev => ({
-        ...prev,
-        team: [...prev.team, member]
-      }));
+
+
+  const {mutate, isPending, data} = useMutation({
+    mutationFn: (formData: CreateProjectType) => createProject(formData),
+    onSuccess: (data) => {
+      dispatch(createNew(data));
+      toast({
+        title: "Success",
+        description: "Project created successfully.",
+        variant: "destructive",
+      });
+      setFormData({
+        name: '',
+        client: '',
+        type: '',
+        priority: '',
+        startDate: undefined,
+        endDate: undefined,
+        budget: '',
+        location: '',
+        description: '',
+        systems: [],
+      });
+      navigate(`/project/${data.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project.",
+        variant: "destructive",
+      });
+      setError(true);
     }
-  };
+  });
 
-  const handleTeamMemberRemove = (member: string) => {
-    setFormData(prev => ({
-      ...prev,
-      team: prev.team.filter(m => m !== member)
-    }));
-  };
-
-  const handleAddNewTeamMember = () => {
-    if (newTeamMember.trim() && !formData.team.includes(newTeamMember.trim())) {
-      handleTeamMemberAdd(newTeamMember.trim());
-      setNewTeamMember('');
-    }
-  };
-
-  
   const isFormValid = () => {
     return formData.name.trim() !== '' && 
     formData.client.trim() !== '' && 
@@ -162,10 +166,12 @@ export default function NewProjectPage() {
     formData.description.trim()&&
     formData.budget.trim()&&
     formData.location.trim()&&
-    formData.systems.length !== 0 
-    //  formData.startDate &&
-    //  formData.endDate;
+    formData.systems.length !== 0 &&
+     formData.startDate &&
+     formData.endDate;
   };
+
+
   const handleSubmit = async () => {
     if(!isFormValid){
       setError(true)
@@ -173,12 +179,24 @@ export default function NewProjectPage() {
       return 
     }
     setError(false)
-    const projectData:ProjectData ={
+    if(!user){
+      toast({
+        title: "sign in to continue",
+        description: "sign in"
+      })
+      return
+    } 
+    const projectData:CreateProjectType ={
       ...formData,
-      uid: uuidv4(),
-      conversation: []
+      startDate:  new Date(formData.startDate).toISOString().split('T')[0],
+      endDate:  new Date(formData.endDate).toISOString().split('T')[0],
+      access_token: user.access_token
     }
-    await dispatch(createNew(projectData))
+     await mutate(projectData);
+    // await dispatch(createNew(projectData))
+    if(!data) {
+      return;
+    }
     const activity:ActivityItem = {
       icon: FolderCheck,
       id: uuidv4(),
@@ -188,7 +206,7 @@ export default function NewProjectPage() {
     }
     await dispatch(addActivity(activity))
     // Here you would send the project data to your backend
-    navigate(`/project/${projectData.uid}`);
+    // navigate(`/project/${projectData.}`);
   };
 
   return (

@@ -1,19 +1,33 @@
-import { LucideProps } from "lucide-react";
 
 export interface ProjectData {
   name: string;
   client: string;
-  type: 'commercial' | 'industrial' | 'residential' | 'institutional' | '';
-  priority: 'low' | 'medium' | 'high' | 'urgent' | '';
+  type: 'Commercial' | 'Industrial' | 'Residential' | 'Institutional';
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent' 
   startDate: Date | undefined;
   endDate: Date | undefined;
   budget: string;
   location: string;
   description: string;
   systems: string[];
-  // team: string[];
-  conversation: Message[]
-  uid: string
+  conversation?: Message[]
+  user_id: string
+  created_at: string;
+  updated_at: string;
+  id: string;
+}
+export type CreateProjectType = {
+  name: string,
+  client: string,
+  type: 'Commercial' | 'Industrial' | 'Residential' | 'Institutional'| '',
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent' | '',
+  startDate: string,
+  endDate: string,
+  budget: string,
+  location: string,
+  description: string,
+  systems: string[],
+  access_token?:string
 }
 export interface Message {
   id: string;
@@ -45,8 +59,8 @@ export interface Proposal {
   project_uid: string; 
   projectName: string;
   client: string;
-  projectType: 'commercial' | 'industrial' | 'residential' | 'institutional' | '';
-  priority: 'low' | 'medium' | 'high' | 'urgent' | '';
+  projectType: 'Commercial' | 'Industrial' | 'Residential' | 'Institutional' | '';
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent' | '';
   startDate: Date | undefined;
   endDate: Date | undefined;
   budget: string;
@@ -70,4 +84,29 @@ export interface ActivityItem {
   time: string;
   // status: 'completed' | 'pending' | 'in-progress'; // add more statuses if needed
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
+
+export type SignupFormType = {
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+};
+export type SignInFormType = {
+  email: string,  
+  password: string,
+};
+
+export interface User  {
+  access_token: string;
+  refresh_token: string;
+  token_type: string; // usually "bearer"
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    created_at: string; // ISO date string
+    updated_at: string; // ISO date string
+  };
 }

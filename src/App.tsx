@@ -17,10 +17,16 @@ import StandardsPage from "./pages/StandardsPage";
 import LibraryPage from "./pages/LibraryPage";
 import ProposalsPage from "./pages/ProposalsPage";
 import NotFound from "./pages/NotFound";
+import SignuPage from "./pages/SignupPage";
+import SignInPage from "./pages/SignInPage";
+import RoutesAuth from "./components/RoutesAuth";
+import ForgotPasswordPage from "./pages/Forgot-Password";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+
+  return( 
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -28,6 +34,21 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AppLayout />}>
+            <Route path="/signup" element={
+              <RoutesAuth>
+                <SignuPage />
+              </RoutesAuth>} 
+              />
+            <Route path="/signin" element={
+              <RoutesAuth>
+                <SignInPage />
+              </RoutesAuth>}
+              />
+            <Route path="/forgot-password" element={
+              <RoutesAuth>
+                <ForgotPasswordPage />
+              </RoutesAuth>}
+              />
             <Route index element={<Dashboard onViewChange={() => {}} />} />
             <Route path="standards" element={<StandardsPage />} />
             <Route path="projects/new" element={<NewProjectPage />} />
@@ -43,6 +64,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  )
+};
 
 export default App;

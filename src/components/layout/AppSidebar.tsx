@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -42,6 +42,7 @@ const projectNavItems = [
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
+  const user = useSelector((state:RootState)=>state.localStorage.user)
   const library = useSelector((state:RootState)=>state.library.library)
   const proposal = useSelector((state:RootState)=>state.proposal.proposal)
   const { state } = useSidebar();
@@ -70,6 +71,15 @@ export function AppSidebar() {
       ? 'bg-primary text-primary-foreground font-medium shadow-elegant'
       : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground';
   };
+
+  const popUp = (timer: number = 500) => {
+   return(
+        <div className="w-fit bg-white p-4 rounded-lg shadow-lg z-20 ">
+           click to sign in
+        </div>
+    );
+  };
+
 
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-64'} collapsible="icon">
@@ -187,9 +197,9 @@ export function AppSidebar() {
           <SidebarGroupLabel>Projects History</SidebarGroupLabel>
           <SidebarMenu>
               {projects.map((item) => (
-                <SidebarMenuItem key={item.uid}>
-                  <SidebarMenuButton asChild className={getNavClassName(`/project/${item.uid}`)}>
-                    <NavLink to={`/project/${item.uid}`} className="capitalize flex items-center justify-between">
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton asChild className={getNavClassName(`/project/${item.id}`)}>
+                    <NavLink to={`/project/${item.id}`} className="capitalize flex items-center justify-between">
                       {item.name}
                     </NavLink>
                   </SidebarMenuButton>
@@ -200,23 +210,42 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* User Profile */}
-      {!collapsed && (
-        <SidebarFooter className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src="" />
-              <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                JD
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">John Doe</p>
-              <p className="text-xs text-muted-foreground">HVAC Engineer</p>
-            </div>
-            <div className="w-2 h-2 bg-success rounded-full"></div>
-          </div>
-        </SidebarFooter>
-      )}
+            {user ? (
+              <>
+              {!collapsed && (
+                <SidebarFooter className="p-4 border-t border-border">
+                  <div className="flex items-center gap-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src="" />
+                        <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
+                          {user.user.first_name[0] + ' ' + user.user.last_name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground"> {user.user.last_name + " " + user.user.first_name} </p>
+                        <p className="text-xs text-muted-foreground">HVAC Engineer</p>
+                      </div>
+                      <div className="w-2 h-2 bg-success rounded-full"></div>
+                  </div>
+                </SidebarFooter>
+              )}
+              </>
+            ):(
+              <SidebarFooter className="p-4 relative border-t border-border">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
+                      GS
+                  </AvatarFallback>
+                  </Avatar>
+                  <Link to="/signin" className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Guest User</p>
+                    <p className="text-xs text-muted-foreground">Please Sign In</p>
+                  </Link>
+                </div>
+              </SidebarFooter>
+            )}
     </Sidebar>
   );
 }
