@@ -97,16 +97,17 @@ export type SignInFormType = {
   password: string,
 };
 
+export interface UserDetail {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  created_at: string; // ISO date string
+  updated_at: string; // ISO date string
+};
 export interface User  {
   access_token: string;
   refresh_token: string;
   token_type: string; // usually "bearer"
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    created_at: string; // ISO date string
-    updated_at: string; // ISO date string
-  };
+  user: UserDetail;
 }

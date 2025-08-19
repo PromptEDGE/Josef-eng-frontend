@@ -3,12 +3,13 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { TopBar } from '@/components/layout/TopBar';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { getProjects } from '@/api/project';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { getAllProject } from '@/lib/redux/slice/projectSlice';
-import { loadUser } from '@/lib/redux/slice/localStorageSlice';
+import { getUser } from '@/api/auth';
+import { loadUser } from '@/lib/redux/slice/userSlice';
 
 export function AppLayout() {
   const user = useSelector((state:RootState)=>state.localStorage.user)
@@ -37,11 +38,15 @@ export function AppLayout() {
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!user?.access_token
   })
+  const {mutate } = useMutation({
+    mutationFn: (id:string)=>getUser(id),
+  })
   useEffect(() => {
+    mutate(user?.access_token)
     if (data) {
       dispatch(getAllProject(data))
     }
-  }, [data,dispatch])
+  }, [data,dispatch,mutate,user])
   useEffect(()=>{
       dispatch(loadUser())
     },[dispatch])

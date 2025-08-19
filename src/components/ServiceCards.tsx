@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-
+import VideoBg from "../assets/Generated File August 19, 2025 - 4_26AM.mp4"
 const ServicesCard = () => {
     const summaryCards = [
       {
@@ -22,10 +22,11 @@ const ServicesCard = () => {
       },
     ];
     return ( 
-      <div className="lg:w-1/2 hidden lg:flex flex-col justify-center items-center px-8 py-12 bg-gradient-to-br from-primary/10 to-secondary/10">
-        <div className="max-w-md w-full space-y-8">
+      <div className=" relative lg:w-1/2 hidden lg:flex flex-col justify-center items-center px-8 py-12 bg-gradient-to-br from-primary/10 to-secondary/10">
+        <video playsInline src={VideoBg} autoPlay={true} loop={true} muted={true}  className="absolute inset-0 object-cover h-full w-full mix-blend-multiply " ></video>
+        <div className="z-20 max-w-md w-full space-y-8">
           {summaryCards.map((card, idx) => (
-            <Card key={idx} className={`shadow-elegant ${card.color} text-center`}>
+            <Card key={idx} className={`shadow-elegant backdrop-blur ${card.color} text-center`}>
               <CardHeader>
                 <CardTitle className="text-xl font-bold mb-2">{card.title}</CardTitle>
               </CardHeader>

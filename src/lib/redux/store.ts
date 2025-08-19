@@ -4,6 +4,7 @@ import library from "./slice/librarySlice"
 import proposal from "./slice/proposalSlice"
 import activities from "./slice/activitySlice"
 import localStorage from "./slice/localStorageSlice";
+import user from "./slice/userSlice"
 export const store = configureStore({
     reducer: {
         project: project,
@@ -11,6 +12,7 @@ export const store = configureStore({
         proposal:proposal,
         activites: activities,
         localStorage: localStorage,
+        user: user
     }
 })
 export type RootState = ReturnType<typeof store.getState>;

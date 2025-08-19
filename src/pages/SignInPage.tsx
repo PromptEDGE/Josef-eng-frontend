@@ -9,11 +9,11 @@ import { SignInFormType } from "@/utils/types";
 import { useMutation } from "@tanstack/react-query";
 import { signInUser } from "@/api/auth";
 import { Eye, EyeClosed, LoaderIcon } from "lucide-react";
-import { storage } from "@/utils/localStorage";
 import { NavLink, useNavigate } from "react-router-dom";
-import { setUser } from "@/lib/redux/slice/localStorageSlice";
 import { useDispatch } from "react-redux";
 import ServicesCard from "@/components/ServiceCards";
+import { setUser } from "@/lib/redux/slice/localStorageSlice";
+import { getUser } from "@/lib/redux/slice/userSlice";
 
 
 const initialForm:SignInFormType = {
@@ -50,12 +50,12 @@ export default function SignInPage() {
       onSuccess: (data) => {
         setForm(initialForm);
         dispatch(setUser(data));
+        dispatch(getUser(data.user))
         navigate("/")
         toast({
           title: "SignIn successful",
           description: "You have successfully signed up.",
         });
-        storage("user", data);
       },
       onError: (error) => {
         toast({

@@ -10,10 +10,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { SignupFormType } from "@/utils/types";
 import { useToast } from "@/hooks/use-toast";
 import { useDispatch } from "react-redux";
-import { storage } from "@/utils/localStorage";
 import { NavLink, useNavigate } from "react-router-dom";
-import { setUser } from "@/lib/redux/slice/localStorageSlice";
 import ServicesCard from "@/components/ServiceCards";
+import { setUser } from "@/lib/redux/slice/localStorageSlice";
+import { getUser } from "@/lib/redux/slice/userSlice";
 
 
 
@@ -59,9 +59,9 @@ export default function SignuPage() {
     mutationFn: (form:SignupFormType) => signUpUser(form),
     onSuccess: async (data) => {
       setForm(initialForm);
-     await storage("user", form);
-     dispatch(setUser(data));
-     navigate("/")
+      dispatch(setUser(data));
+      dispatch(getUser(data.user))
+      navigate("/")
       toast({
         title: "Signup successful",
         description: "You have successfully signed up.",

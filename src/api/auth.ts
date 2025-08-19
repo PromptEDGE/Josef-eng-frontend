@@ -67,3 +67,20 @@ export const forgotPassword = async ({email, access}:{email:string,access:string
     console.error("Error:", error.response?.data || error.message);
   }
 };
+
+export async function getUser(id:string) {
+  try {
+    const response = await axios.get(
+      'https://backend-service-production-c674.up.railway.app/api/v1/auth/me',
+      {
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${id}`
+        }
+      }
+    );
+    console.log(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+  }
+}

@@ -28,7 +28,7 @@ import { NavLink } from 'react-router-dom';
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
-  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const user = useSelector((state:RootState)=>state.user.user)
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
 
@@ -115,7 +115,7 @@ export function TopBar() {
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" />
                 <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                  {user.user.first_name[0]+user.user.last_name[0]}
+                  {user.first_name[0]+user.last_name[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>

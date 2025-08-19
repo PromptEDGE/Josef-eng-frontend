@@ -22,9 +22,8 @@ const localStorageSlice = createSlice({
         // Set user data in state and localStorage
         const user = action.payload;
         state.user = user;
-        storage("user", user);
       }
     },
   });
-export const { loadUser,setUser } = localStorageSlice.actions;
+export const { setUser } = localStorageSlice.actions;
 export default localStorageSlice.reducer;
