@@ -42,7 +42,7 @@ const projectNavItems = [
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
-  const user = useSelector((state:RootState)=>state.user.user)
+  const user = useSelector((state:RootState)=>state.localStorage.user)
   const library = useSelector((state:RootState)=>state.library.library)
   const proposal = useSelector((state:RootState)=>state.proposal.proposal)
   const { state } = useSidebar();
@@ -218,11 +218,11 @@ export function AppSidebar() {
                       <Avatar className="w-8 h-8">
                         <AvatarImage src="" />
                         <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                          {user?.first_name[0] + ' ' + user?.last_name[0]}
+                          {user?.user.first_name[0] + ' ' + user?.user.last_name[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground"> {user.last_name + " " + user.first_name} </p>
+                        <p className="text-sm font-medium text-foreground"> {user.user.last_name + " " + user.user.first_name} </p>
                         <p className="text-xs text-muted-foreground">HVAC Engineer</p>
                       </div>
                       <div className="w-2 h-2 bg-success rounded-full"></div>

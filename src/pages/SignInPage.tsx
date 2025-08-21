@@ -50,7 +50,7 @@ export default function SignInPage() {
       onSuccess: (data) => {
         setForm(initialForm);
         dispatch(setUser(data));
-        dispatch(getUser(data.user))
+        // dispatch(getUser(data))
         navigate("/")
         toast({
           title: "SignIn successful",
