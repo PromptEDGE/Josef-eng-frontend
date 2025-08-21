@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 
 const RoutesAuth = ({children}:{children:ReactNode}) => {
-    const user = useSelector((state:RootState)=>state.user.user)
+    const user = useSelector((state:RootState)=>state.localStorage.user)
         if(user){
             
             return <Navigate replace to="/" />
