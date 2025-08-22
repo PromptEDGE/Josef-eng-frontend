@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { getAllProject } from '@/lib/redux/slice/projectSlice';
 import { getUser } from '@/api/auth';
-import { loadUser } from '@/lib/redux/slice/userSlice';
+import { loadUser } from '@/lib/redux/slice/localStorageSlice';
 
 export function AppLayout() {
   const user = useSelector((state:RootState)=>state.localStorage.user)
@@ -42,7 +42,11 @@ export function AppLayout() {
     mutationFn: (id:string)=>getUser(id),
   })
   useEffect(() => {
-    mutate(user?.access_token)
+    if(!user?.access_token) {
+      return
+    }else{
+      mutate(user?.access_token)
+    }
     if (data) {
       dispatch(getAllProject(data))
     }

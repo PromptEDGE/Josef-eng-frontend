@@ -21,6 +21,7 @@ import SignuPage from "./pages/SignupPage";
 import SignInPage from "./pages/SignInPage";
 import RoutesAuth from "./components/RoutesAuth";
 import ForgotPasswordPage from "./pages/Forgot-Password";
+import ProtectedRoutes from "./components/ProtectRoute";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,12 @@ const App = () => {
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<AppLayout />}>
+          <Route path="/" element={
+            // <ProtectedRoutes>
+            <AppLayout />
+            // </ProtectedRoutes>
+
+            }>
             <Route path="/signup" element={
               <RoutesAuth>
                 <SignuPage />
@@ -50,15 +56,41 @@ const App = () => {
                 <ForgotPasswordPage />
               </RoutesAuth>}
               />
-            <Route index element={<Dashboard onViewChange={() => {}} />} />
-            <Route path="standards" element={<StandardsPage />} />
-            <Route path="projects/new" element={<NewProjectPage />} />
-            <Route path="library" element={<LibraryPage />} />
-            <Route path="library/videos" element={<LibraryPage />} />
-            <Route path="library/audio" element={<LibraryPage />} />
-            <Route path="library/documents" element={<LibraryPage />} />
-            <Route path="proposals" element={<ProposalsPage />} />
-            <Route path="project/:uid" element={<AIAssistant />} />
+            <Route index element={
+              <ProtectedRoutes>
+              <Dashboard onViewChange={() => {
+              }} />
+              </ProtectedRoutes>
+              } />
+            <Route path="standards" element={
+              <ProtectedRoutes><StandardsPage /></ProtectedRoutes>} />
+            <Route path="projects/new" element={<ProtectedRoutes><NewProjectPage /></ProtectedRoutes>} />
+            <Route path="library" element={<ProtectedRoutes><LibraryPage /></ProtectedRoutes>} />
+            <Route path="library/videos" element={
+              <ProtectedRoutes>
+                <LibraryPage />
+              </ProtectedRoutes>
+              } />
+            <Route path="library/audio" element={
+              <ProtectedRoutes>
+                <LibraryPage />
+              </ProtectedRoutes>
+              } />
+            <Route path="library/documents" element={
+              <ProtectedRoutes>
+                <LibraryPage />
+              </ProtectedRoutes>
+              } />
+            <Route path="proposals" element={
+              <ProtectedRoutes>
+                <ProposalsPage />
+                </ProtectedRoutes>
+                } />
+            <Route path="project/:uid" element={
+              <ProtectedRoutes>
+                <AIAssistant />
+              </ProtectedRoutes>
+              } />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

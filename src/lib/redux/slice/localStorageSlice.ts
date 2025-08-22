@@ -15,8 +15,10 @@ const localStorageSlice = createSlice({
     reducers: {
       loadUser: (state) => {
         // Save user data to localStorage
-        const storedUser = storage("user");
-        state.user =storedUser
+        const storedUser: User = storage("user");
+        if(storedUser){
+          state.user =storedUser
+        }
       },
       setUser: (state, action:PayloadAction<User>) => {
         // Set user data in state and localStorage
@@ -25,5 +27,5 @@ const localStorageSlice = createSlice({
       }
     },
   });
-export const { setUser } = localStorageSlice.actions;
+export const { setUser,loadUser } = localStorageSlice.actions;
 export default localStorageSlice.reducer;

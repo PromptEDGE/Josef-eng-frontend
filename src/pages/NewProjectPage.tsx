@@ -135,7 +135,6 @@ export default function NewProjectPage() {
       toast({
         title: "Success",
         description: "Project created successfully.",
-        variant: "destructive",
       });
       setFormData({
         name: '',

@@ -1,12 +1,12 @@
 import { RootState } from "@/lib/redux/store";
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 
-const RoutesAuth = ({children}:{children:ReactNode}) => {
+const ProtectedRoutes = ({children}:{children:ReactNode}) => {
     const user = useSelector((state:RootState)=>state.localStorage.user)
-        if(user){
-            return <Navigate replace to="/" />
+        if(!user){
+            return <Navigate replace to="/signin" />
         }
     return (
     <>
@@ -15,4 +15,4 @@ const RoutesAuth = ({children}:{children:ReactNode}) => {
     )
 }
  
-export default RoutesAuth;
+export default ProtectedRoutes;

@@ -70,6 +70,7 @@ export const forgotPassword = async ({email, access}:{email:string,access:string
 
 export async function getUser(id:string) {
   try {
+    if(!id) throw  new Error("UnAuthorized")
     const response = await axios.get(
       'https://backend-service-production-c674.up.railway.app/api/v1/auth/me',
       {
@@ -79,7 +80,6 @@ export async function getUser(id:string) {
         }
       }
     );
-    console.log(response.data);
   } catch (error) {
     console.error(error.response?.data || error.message);
   }

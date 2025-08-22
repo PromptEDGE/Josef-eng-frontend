@@ -48,9 +48,9 @@ export default function SignInPage() {
     const {mutate, isPending} = useMutation({
       mutationFn: (form:SignInFormType) => signInUser(form),
       onSuccess: (data) => {
-        setForm(initialForm);
         dispatch(setUser(data));
-        // dispatch(getUser(data))
+        setForm(initialForm);
+        dispatch(getUser(data))
         navigate("/")
         toast({
           title: "SignIn successful",

@@ -60,7 +60,7 @@ export default function SignuPage() {
     onSuccess: async (data) => {
       setForm(initialForm);
       dispatch(setUser(data));
-      // dispatch(getUser(data))
+      dispatch(getUser(data))
       navigate("/")
       toast({
         title: "Signup successful",
