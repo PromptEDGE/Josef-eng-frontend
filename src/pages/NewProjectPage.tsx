@@ -12,8 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -21,30 +19,21 @@ import { format } from 'date-fns';
 import {
   Building,
   Calendar as CalendarIcon,
-  DollarSign,
-  Users,
-  MapPin,
   FileText,
-  Plus,
   Save,
-  ArrowLeft,
   CheckCircle,
   Wind,
   Thermometer,
   Zap,
   Droplets,
-  X,
   FolderCheck,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { ActivityItem, CreateProjectType, ProjectData } from '@/utils/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { createNew } from '@/lib/redux/slice/projectSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
-import { createProject, getProjects } from '@/api/project';
-import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { RootState } from '@/lib/redux/store';
+import useCreateProject from '@/hooks/useCreateProject';
 
 
 
@@ -91,11 +80,7 @@ type CollectInfo = {
   systems: string[],
 }
 export default function NewProjectPage() {
-  const navigate = useNavigate();
-  const dispatch = useDispatch()
-  const user = useSelector((state:RootState)=>state.localStorage.user)
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<CollectInfo>({
+  const initialForm:CollectInfo = {
     name: '',
     client: '',
     type: '',
@@ -106,8 +91,13 @@ export default function NewProjectPage() {
     location: '',
     description: '',
     systems: [],
-  });
-  const [error,setError] = useState<boolean>(false)
+  }
+  const {mutate, data} = useCreateProject()
+  const dispatch = useDispatch()
+  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<CollectInfo>(initialForm);
+  // const [error,setError] = useState<boolean>(false)
   // const [newTeamMember, setNewTeamMember] = useState('');
 
   const handleInputChange = (field: keyof CreateProjectType, value: any) => {
@@ -123,42 +113,6 @@ export default function NewProjectPage() {
     }));
   };
 
-  const { mutate: fetchProjects } =  useMutation({
-    mutationFn: (id:string)=>getProjects(id),
-  })
-
-  const {mutate, isPending, data} = useMutation({
-    mutationFn: (formData: CreateProjectType) => createProject(formData),
-    onSuccess: (data) => {
-      fetchProjects(user?.access_token);
-      // dispatch(createNew(data));
-      toast({
-        title: "Success",
-        description: "Project created successfully.",
-      });
-      setFormData({
-        name: '',
-        client: '',
-        type: '',
-        priority: '',
-        startDate: undefined,
-        endDate: undefined,
-        budget: '',
-        location: '',
-        description: '',
-        systems: [],
-      });
-      navigate(`/project/${data.id}`);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create project.",
-        variant: "destructive",
-      });
-      setError(true);
-    }
-  });
 
   const isFormValid = () => {
     return formData.name.trim() !== '' && 
@@ -176,11 +130,13 @@ export default function NewProjectPage() {
 
   const handleSubmit = async () => {
     if(!isFormValid){
-      setError(true)
-      alert("not filled")
+      toast({
+        title: "Please fill all required fields",
+        description: "All fields marked (required) must be filled to proceed.",
+        variant: "destructive",
+      })
       return 
     }
-    setError(false)
     if(!user){
       toast({
         title: "sign in to continue",
@@ -195,10 +151,10 @@ export default function NewProjectPage() {
       access_token: user.access_token
     }
      await mutate(projectData);
-    // await dispatch(createNew(projectData))
     if(!data) {
       return;
     }
+    // setFormData(initialForm)
     const activity:ActivityItem = {
       icon: FolderCheck,
       id: uuidv4(),
@@ -322,7 +278,7 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date 
-                    <span className="text-gray-300 ml-1">(optional)</span>
+                    <span className="text-gray-300 ml-1">(required)</span>
                   </Label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -349,7 +305,7 @@ export default function NewProjectPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>End Date 
-                    <span className="text-gray-300 ml-1">(optional)</span>
+                    <span className="text-gray-300 ml-1">(required)</span>
                   </Label>
                   <Popover>
                     <PopoverTrigger asChild>

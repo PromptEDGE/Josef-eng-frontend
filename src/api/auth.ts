@@ -1,10 +1,10 @@
 import { SignInFormType, SignupFormType } from '@/utils/types';
 import axios from 'axios';
-
+const url = import.meta.env.VITE_BACKEND_URL as string;
 export const signUpUser = async ({ email, password, firstName: first_name, lastName:last_name }:SignupFormType) => {
   try {
     const response = await axios.post(
-      'https://backend-service-production-c674.up.railway.app/api/v1/auth/signup',
+      `${url}/api/v1/auth/signup`,
       {
         email,
         password,
@@ -27,7 +27,7 @@ export const signUpUser = async ({ email, password, firstName: first_name, lastN
 export const signInUser = async ({ email, password }:SignInFormType) => {
   try {
     const response = await axios.post(
-      'https://backend-service-production-c674.up.railway.app/api/v1/auth/signin',
+      `${url}/api/v1/auth/signin`,
       {
         email,
         password
@@ -49,7 +49,7 @@ export const signInUser = async ({ email, password }:SignInFormType) => {
 export const forgotPassword = async ({email, access}:{email:string,access:string}) => {
   try {
     const response = await axios.post(
-      "https://backend-service-production-c674.up.railway.app/api/v1/auth/forgot-password",
+      `${url}/api/v1/auth/forgot-password`,
       {
         email
       },
@@ -72,7 +72,7 @@ export async function getUser(id:string) {
   try {
     if(!id) throw  new Error("UnAuthorized")
     const response = await axios.get(
-      'https://backend-service-production-c674.up.railway.app/api/v1/auth/me',
+      `${url}/api/v1/auth/me`,
       {
         headers: {
           'accept': 'application/json',

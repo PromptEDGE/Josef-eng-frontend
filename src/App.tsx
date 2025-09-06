@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Dashboard } from "@/components/Dashboard";
 import DocumentsPage from "./pages/DocumentsPage";
@@ -17,7 +17,7 @@ import StandardsPage from "./pages/StandardsPage";
 import LibraryPage from "./pages/LibraryPage";
 import ProposalsPage from "./pages/ProposalsPage";
 import NotFound from "./pages/NotFound";
-import SignuPage from "./pages/SignupPage";
+import SignupPage from "./pages/SignupPage";
 import SignInPage from "./pages/SignInPage";
 import RoutesAuth from "./components/RoutesAuth";
 import ForgotPasswordPage from "./pages/Forgot-Password";
@@ -26,13 +26,12 @@ import ProtectedRoutes from "./components/ProtectRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
-
+  const navigate = useNavigate();
   return( 
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
         <Routes>
           <Route path="/" element={
             // <ProtectedRoutes>
@@ -42,7 +41,7 @@ const App = () => {
             }>
             <Route path="/signup" element={
               <RoutesAuth>
-                <SignuPage />
+                <SignupPage />
               </RoutesAuth>} 
               />
             <Route path="/signin" element={
@@ -58,8 +57,9 @@ const App = () => {
               />
             <Route index element={
               <ProtectedRoutes>
-              <Dashboard onViewChange={() => {
-              }} />
+              <Dashboard onViewChange={(view: string) => {
+                navigate(view)
+              }}/>
               </ProtectedRoutes>
               } />
             <Route path="standards" element={
@@ -94,7 +94,6 @@ const App = () => {
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
   )

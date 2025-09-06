@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Mail, RefreshCcw } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ServicesCard from "@/components/ServiceCards";
@@ -11,13 +10,14 @@ import { useMutation } from "@tanstack/react-query";
 import { forgotPassword } from "@/api/auth";
 import { useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
+import useForgottenPassword from "@/hooks/useForgottenPassword";
 
 
 export default function ForgotPasswordPage() {
+	const { mutate, isPending, errorMessage, success } = useForgottenPassword()
 	const user = useSelector((state: RootState) => state.localStorage.user);
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
-	const [submitted, setSubmitted] = useState(false);
 
 	// Custom email validation
 	const validateEmail = (value: string) => {
@@ -27,23 +27,13 @@ export default function ForgotPasswordPage() {
 		return "";
 	};
 
-	const {mutate,isPending} = useMutation({
-		mutationFn: ({email, access}:{email:string,access: string})=> forgotPassword({email, access}),
-		onSuccess: () => {
-			toast.success("Password reset link sent to your email.");
-		},
-		onError: (error) => {
-			setError(error.message);
-			toast.error("Failed to send reset link. " + error.message);
-		}
-	})
+
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const err = validateEmail(email);
 		setError(err);
 		if (!err) {
-			setSubmitted(true);
 			await mutate({ email, access: user?.access_token });
 		}
 	};
@@ -54,44 +44,42 @@ export default function ForgotPasswordPage() {
                 <ServicesCard />
 
 			{/* Right: Forgot Password form */}
-			<div className="flex-1 flex flex-col justify-center items-center px-6 py-12 bg-card">
-				<Card className="w-full max-w-md shadow-elegant">
+			<div className="flex-1 flex flex-col justify-center items-center px-8 py-12 bg-gradient-card">
+				<Card className="w-full max-w-md shadow-elegant border-2 border-primary rounded-xl bg-card backdrop-blur-lg">
 					<CardHeader>
-						<CardTitle className="text-2xl text-primary text-center">Forgot Password</CardTitle>
+						<CardTitle className="text-3xl font-extrabold text-primary text-center mb-2 tracking-tight">Forgot Password</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<form className="space-y-6" onSubmit={handleSubmit} noValidate>
 							<div>
-								<label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-									Email Address
-								</label>
+								<label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">Email Address</label>
 								<Input
 									id="email"
 									type="email"
 									value={email}
 									onChange={e => { setEmail(e.target.value); setError(""); }}
-									className={cn("w-full", error && "border-destructive")}
+									className={cn("w-full mt-2 border-input focus:ring-2 focus:ring-primary transition-shadow", error && "border-destructive")}
 									placeholder="Enter your email"
 									autoComplete="email"
 									required
 								/>
-								{error && <p className="mt-2 text-destructive text-sm">{error}</p>}
+								{error && <p className="mt-2 text-destructive text-xs">{error}</p>}
 							</div>
 							<Button
 								disabled={isPending}
 								type="submit"
-								className="w-full bg-gradient-primary text-primary-foreground shadow-elegant"
+								className="w-full bg-gradient-primary text-primary-foreground shadow-elegant font-semibold text-lg py-3 transition-all hover:scale-[1.02]"
 							>
 								{isPending ? (
 									<span className="flex items-center justify-center">
-										<RefreshCcw className="animate-spin" />
+										<RefreshCcw className="animate-spin mr-2" />
 										Sending...
 									</span>
 								) : (
 									<span>Send Reset Link</span>
 								)}
 							</Button>
-							{submitted && (
+							{success && (
 								<p className="mt-4 text-success text-center">Check your email for the reset link.</p>
 							)}
 						</form>

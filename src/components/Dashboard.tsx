@@ -164,7 +164,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
             <div className="flex gap-2">
               <Button 
                 variant="secondary" 
-                onClick={() => onViewChange('new')}
+                onClick={() => onViewChange('/projects/new')}
                 className="shadow-elegant"
               >
                 <Brain className="w-4 h-4 mr-2" />
@@ -172,8 +172,8 @@ export function Dashboard({ onViewChange }: DashboardProps) {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => onViewChange('upload')}
-                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => onViewChange('/upload-file')}
+                className="border-primary-foreground/10 text-black hover:text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Files

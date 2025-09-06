@@ -1,4 +1,3 @@
-import { RootState } from "@/lib/redux/store";
 import { CreateProjectType } from "@/utils/types";
 import axios from "axios";
 
@@ -41,7 +40,6 @@ export const createProject = async ({
       }
     );
 
-    console.log('Project created:', response.data);
     return response.data;
   } catch (error) {
     console.error('Project creation failed:', error.response?.data || error.message);

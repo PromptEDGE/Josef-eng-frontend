@@ -10,8 +10,10 @@ import { RootState } from '@/lib/redux/store';
 import { getAllProject } from '@/lib/redux/slice/projectSlice';
 import { getUser } from '@/api/auth';
 import { loadUser } from '@/lib/redux/slice/localStorageSlice';
+import useProjects from '@/hooks/useProjects';
 
 export function AppLayout() {
+  const { projects } = useProjects()
   const user = useSelector((state:RootState)=>state.localStorage.user)
   const dispatch = useDispatch();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -32,12 +34,7 @@ export function AppLayout() {
     }
   }
 
-  const { data } = useQuery({
-    queryKey: ['projects',user?.access_token],
-    queryFn: ({queryKey}) => getProjects(queryKey[1]),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: !!user?.access_token
-  })
+
   const {mutate } = useMutation({
     mutationFn: (id:string)=>getUser(id),
   })
@@ -47,10 +44,8 @@ export function AppLayout() {
     }else{
       mutate(user?.access_token)
     }
-    if (data) {
-      dispatch(getAllProject(data))
-    }
-  }, [data,dispatch,mutate,user])
+
+  }, [projects,dispatch,mutate,user])
   useEffect(()=>{
       dispatch(loadUser())
     },[dispatch])

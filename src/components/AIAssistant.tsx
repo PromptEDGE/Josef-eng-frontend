@@ -61,6 +61,7 @@ const predefinedQuestions = [
 
 export function AIAssistant() {
   const params = useParams()
+  const uid = params.uid as string 
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
   const [messages, setMessages] = useState<Message[]>([]);
@@ -78,12 +79,12 @@ export function AIAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   const findProject = useCallback(()=>{
-    const project = projects.find(item=>item.id.toLowerCase()===String(params.uid.toLowerCase()))
+    const project = projects.find(item=>item.id.toLowerCase()===uid)
     if(project){
       setProject(project)
       setMessages(project.conversation)
     }
-  },[params.uid,projects])
+  },[uid,projects])
 
 
     const readableSize = (size: number) => {
@@ -156,7 +157,7 @@ export function AIAssistant() {
         },
       timestamp: new Date().toISOString()
     };
-    await dispatch(updateProject({message: userMessage,uid:params.uid}))
+    await dispatch(updateProject({message: userMessage,uid:uid}))
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -176,7 +177,7 @@ export function AIAssistant() {
           category: detectCategory(inputValue),
           confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
         };
-        await dispatch(updateProject({message: assistantMessage,uid:params.uid}))
+        await dispatch(updateProject({message: assistantMessage,uid:uid}))
         setMessages(prev => [...prev, assistantMessage]);
     } 
       
@@ -381,7 +382,7 @@ Could you provide more specific details about your project requirements? This wi
       <Card className="flex-1 flex flex-col">
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
-            {messages.map((message) => (
+            {messages?.map((message) => (
               <div
                 key={message.id}
                 className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
