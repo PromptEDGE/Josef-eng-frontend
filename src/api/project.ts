@@ -1,7 +1,7 @@
 import { CreateProjectType } from "@/utils/types";
 import axios from "axios";
 
-
+const url = import.meta.env.VITE_BACKEND_URL
 export const createProject = async ({
   name,
   client,
@@ -18,7 +18,7 @@ export const createProject = async ({
   try {
     if(!access_token) return
     const response = await axios.post(
-      'https://backend-service-production-c674.up.railway.app/api/v1/projects',
+      `${url}/api/v1/projects`,
       {
         name,
         client,
