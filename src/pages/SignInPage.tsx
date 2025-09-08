@@ -58,21 +58,21 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row ">
+    <div className="h-dvh flex flex-col lg:flex-row ">
       {/* Left: Project Summary */}
       <ServicesCard />
 
       {/* Right: Signin Form */}
       <div className="lg:w-1/2 flex flex-col justify-center items-center px-8 py-12">
-        <Card className="w-full max-w-md shadow-elegant border-2 border-primary rounded-xl bg-card backdrop-blur-lg">
+        <Card className="w-full max-w-md shadow-elegant">
           <CardHeader>
-            <CardTitle className="text-3xl font-extrabold text-primary mb-2 tracking-tight">Sign In</CardTitle>
-            <p className="text-muted-foreground text-base">Access your account</p>
+            <CardTitle className="text-2xl font-bold text-primary mb-2">Sign In</CardTitle>
+            <p className="text-muted-foreground">Access your account</p>
           </CardHeader>
           <CardContent>
             <form className="space-y-6" onSubmit={handleSubmit} noValidate>
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -80,56 +80,52 @@ export default function SignInPage() {
                   autoComplete="email"
                   value={form.email}
                   onChange={handleChange}
-                  className={`mt-2 ${errors.email ? "border-destructive" : "border-input"} focus:ring-2 focus:ring-primary transition-shadow`}
+                  className={errors.email ? "border-destructive" : ""}
                   required
                 />
                 {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
               </div>
               <div>
-                <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <Input
+                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center gap-2">
+                    <Input
                     id="password"
                     name="password"
                     type={!password ? "password" : "text"}
                     autoComplete="current-password"
                     value={form.password}
                     onChange={handleChange}
-                    className={`transition-shadow ${errors.password ? "border-destructive" : "border-input"} focus:ring-2 focus:ring-primary`}
+                    className={errors.password ? "border-destructive" : ""}
                     required
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-primary"
-                    onClick={() => setPassword(!password)}
-                  >
-                    {!password ? <EyeClosed /> : <Eye />}
-                  </Button>
+                    />
+                    <Button
+                        type="button"
+                        className=""
+                        onClick={() => setPassword(!password)}
+                    >
+                        {!password ? <EyeClosed /> : <Eye /> } 
+                    </Button>
                 </div>
                 {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
               </div>
-              <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground shadow-elegant mt-4 font-semibold text-lg py-3 transition-all hover:scale-[1.02]">
-                {isPending ? (
-                  <>
-                    <LoaderIcon className="animate-spin mr-2" />
-                    <span>Signing In...</span>
-                  </>
-                ) : (
-                  "Sign In"
-                )}
+              <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground shadow-elegant mt-4">
+                {isPending ? 
+                <>
+                  <LoaderIcon className="animate-spin" />
+                  <span>Signing In...</span>
+                </> 
+                : "Sign In"} 
               </Button>
             </form>
           </CardContent>
-          <div className="flex items-center justify-center gap-1 p-2 text-sm">
-            <p className="text-muted-foreground">Don't have an account?</p>
-            <NavLink className="text-primary font-medium hover:underline" to="/signup">
-              Sign up
-            </NavLink>
+          <div className="flex items-center justify-center gap-1 p-2 ">
+              <p className="">Don't have an account?</p>
+              <NavLink className={"text-blue-400"} to={"/signup"}>
+              sign up
+              </NavLink>
           </div>
-          <NavLink className="text-primary flex items-center justify-center p-2 text-sm hover:underline" to="/forgot-password">
-            Forgot password?
+          <NavLink className={"text-blue-400 flex items-center justify-center p-2 "} to={"/forgot-password"}>
+              forgot password?
           </NavLink>
         </Card>
       </div>

@@ -76,16 +76,16 @@ export default function SignupPage() {
       <ServicesCard />
       {/* Right: Signup Form */}
       <div className="lg:w-1/2 flex flex-col justify-center items-center px-8 py-12">
-        <Card className="w-full max-w-md shadow-elegant border-2 border-primary rounded-xl bg-card backdrop-blur-lg">
+        <Card className="w-full max-w-md shadow-elegant">
           <CardHeader>
-            <CardTitle className="text-3xl font-extrabold text-primary mb-2 tracking-tight">Sign Up</CardTitle>
-            <p className="text-muted-foreground text-base">Create your account to get started</p>
+            <CardTitle className="text-2xl font-bold text-primary mb-2">Sign Up</CardTitle>
+            <p className="text-muted-foreground">Create your account to get started</p>
           </CardHeader>
           <CardContent>
             <form className="space-y-6" onSubmit={(e:FormEvent)=>handleSubmit(e,form)} noValidate>
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="firstName" className="text-sm font-medium text-foreground">First Name</Label>
+                  <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
                     name="firstName"
@@ -93,13 +93,13 @@ export default function SignupPage() {
                     autoComplete="given-name"
                     value={form.firstName}
                     onChange={handleChange}
-                    className={`mt-2 ${errors.firstName ? "border-destructive" : "border-input"} focus:ring-2 focus:ring-primary transition-shadow`}
+                    className={errors.firstName ? "border-destructive" : ""}
                     required
                   />
                   {errors.firstName && <p className="text-destructive text-xs mt-1">{errors.firstName}</p>}
                 </div>
                 <div className="flex-1">
-                  <Label htmlFor="lastName" className="text-sm font-medium text-foreground">Last Name</Label>
+                  <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
                     name="lastName"
@@ -107,14 +107,14 @@ export default function SignupPage() {
                     autoComplete="family-name"
                     value={form.lastName}
                     onChange={handleChange}
-                    className={`mt-2 ${errors.lastName ? "border-destructive" : "border-input"} focus:ring-2 focus:ring-primary transition-shadow`}
+                    className={errors.lastName ? "border-destructive" : ""}
                     required
                   />
                   {errors.lastName && <p className="text-destructive text-xs mt-1">{errors.lastName}</p>}
                 </div>
               </div>
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -122,14 +122,14 @@ export default function SignupPage() {
                   autoComplete="email"
                   value={form.email}
                   onChange={handleChange}
-                  className={`mt-2 ${errors.email ? "border-destructive" : "border-input"} focus:ring-2 focus:ring-primary transition-shadow`}
+                  className={errors.email ? "border-destructive" : ""}
                   required
                 />
                 {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
               </div>
               <div>
-                <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
-                <div className="flex items-center gap-2 mt-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center gap-2">
                   <Input
                     id="password"
                     name="password"
@@ -137,37 +137,33 @@ export default function SignupPage() {
                     autoComplete="new-password"
                     value={form.password}
                     onChange={handleChange}
-                    className={`transition-shadow ${errors.password ? "border-destructive" : "border-input"} focus:ring-2 focus:ring-primary`}
+                    className={errors.password ? "border-destructive" : ""}
                     required
                   />
                   <Button
                     type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-primary"
+                    className=""
                     onClick={() => setPassword(!password)}
                   >
-                    {!password ? <EyeClosed /> : <Eye />}
+                    {!password ? <EyeClosed /> : <Eye /> } 
                   </Button>
                 </div>
                 {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
               </div>
-              <Button disabled={isPending} type="submit" className="w-full bg-gradient-primary text-primary-foreground shadow-elegant mt-4 font-semibold text-lg py-3 transition-all hover:scale-[1.02]"> 
-                {isPending ? (
-                  <>
-                    <LoaderIcon className="animate-spin mr-2" />
-                    <span>Signing Up...</span>
-                  </>
-                ) : (
-                  "Sign Up"
-                )}
+              <Button disabled={isPending} type="submit" className="w-full bg-gradient-primary text-primary-foreground shadow-elegant mt-4"> 
+                {isPending ? 
+                <>
+                  <LoaderIcon className="animate-spin" />
+                  <span>Signing Up...</span>
+                </> 
+                : "Sign Up"} 
               </Button>
             </form>
           </CardContent>
-          <div className="flex items-center justify-center gap-1 p-2 text-sm">
-            <p className="text-muted-foreground">Have an account?</p>
-            <NavLink className="text-primary font-medium hover:underline" to="/signin">
-              Sign in
+          <div className="flex items-center justify-center gap-1 p-2 ">
+            <p className="">Have an account?</p>
+            <NavLink className={"text-blue-400"} to={"/signin"}>
+              sign in
             </NavLink>
           </div>
         </Card>

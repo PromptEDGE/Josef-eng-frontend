@@ -11,6 +11,7 @@ import { forgotPassword } from "@/api/auth";
 import { useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
 import useForgottenPassword from "@/hooks/useForgottenPassword";
+import { NavLink } from "react-router-dom";
 
 
 export default function ForgotPasswordPage() {
@@ -44,35 +45,37 @@ export default function ForgotPasswordPage() {
                 <ServicesCard />
 
 			{/* Right: Forgot Password form */}
-			<div className="flex-1 flex flex-col justify-center items-center px-8 py-12 bg-gradient-card">
-				<Card className="w-full max-w-md shadow-elegant border-2 border-primary rounded-xl bg-card backdrop-blur-lg">
+					<div className="flex-1 flex flex-col justify-center items-center px-6 py-12 bg-card">
+				<Card className="w-full max-w-md shadow-elegant">
 					<CardHeader>
-						<CardTitle className="text-3xl font-extrabold text-primary text-center mb-2 tracking-tight">Forgot Password</CardTitle>
+						<CardTitle className="text-2xl text-primary text-center">Forgot Password</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<form className="space-y-6" onSubmit={handleSubmit} noValidate>
 							<div>
-								<label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">Email Address</label>
+								<label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+									Email Address
+								</label>
 								<Input
 									id="email"
 									type="email"
 									value={email}
 									onChange={e => { setEmail(e.target.value); setError(""); }}
-									className={cn("w-full mt-2 border-input focus:ring-2 focus:ring-primary transition-shadow", error && "border-destructive")}
+									className={cn("w-full", error && "border-destructive")}
 									placeholder="Enter your email"
 									autoComplete="email"
 									required
 								/>
-								{error && <p className="mt-2 text-destructive text-xs">{error}</p>}
+								{error && <p className="mt-2 text-destructive text-sm">{error}</p>}
 							</div>
 							<Button
 								disabled={isPending}
 								type="submit"
-								className="w-full bg-gradient-primary text-primary-foreground shadow-elegant font-semibold text-lg py-3 transition-all hover:scale-[1.02]"
+								className="w-full bg-gradient-primary text-primary-foreground shadow-elegant"
 							>
 								{isPending ? (
 									<span className="flex items-center justify-center">
-										<RefreshCcw className="animate-spin mr-2" />
+										<RefreshCcw className="animate-spin" />
 										Sending...
 									</span>
 								) : (
