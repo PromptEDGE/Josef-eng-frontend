@@ -2,15 +2,16 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Play, Eye, FileText } from 'lucide-react';
+import { Play, Eye, FileText, X } from 'lucide-react';
 import { LibraryItem } from '@/utils/types';
 
 interface DisplayFileModalProps {
   item: LibraryItem;
-  download: (url:string,name:string)=>void
+  download: (url:string,name:string)=>void,
+  cancel: (item:LibraryItem|null)=>void,
 }
 
-const DisplayFileModal: React.FC<DisplayFileModalProps> = ({ item,download }) => {
+const DisplayFileModal: React.FC<DisplayFileModalProps> = ({ item,download,cancel }) => {
   const renderMedia = () => {
     if (item.type === 'video') {
       return (
@@ -50,7 +51,8 @@ const DisplayFileModal: React.FC<DisplayFileModalProps> = ({ item,download }) =>
   };
 
   return (
-    <Card className=" w-full sm:w-[400px] lg:w-[600px] mx-auto p-4">
+    <Card className="relative w-full sm:w-[400px] lg:w-[600px] mx-auto p-4">
+      <X onClick={()=>cancel(null)} className='cursor-pointer absolute right-5 top-5 ' />
       <CardHeader>
         <CardTitle className="text-xl">{item.name}</CardTitle>
         <CardDescription>{item.description}</CardDescription>

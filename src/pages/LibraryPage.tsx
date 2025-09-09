@@ -180,8 +180,8 @@ export default function LibraryPage() {
     setLibraryItems(library)
   },[library])
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col gap-4">
+    <div className="container mx-auto p-6 flex flex-col gap-6 ">
+      <div className="  flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Project Library</h1>
@@ -275,9 +275,8 @@ export default function LibraryPage() {
           initial={{opacity: 0,scale: 0.9}}
           animate={{opacity: 1,scale: 1}}
           exit={{opacity: 0,scale: 0.9}}
-        className="w-full h-dvh bg-white/80 flex items-center justify-center fixed inset-0 ">
-          <X onClick={()=>setSelectedFile(null)} className='cursor-pointer absolute right-5 top-5 ' />
-          <DisplayFileModal download={handleDownload} item={selectedFile} />
+        className="w-full h-dvh backdrop-blur flex items-center justify-center fixed inset-0 ">
+          <DisplayFileModal cancel={(state: LibraryItem|null)=>setSelectedFile(state)} download={handleDownload} item={selectedFile} />
         </motion.div>
         }
       </AnimatePresence>

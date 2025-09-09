@@ -27,7 +27,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { useParams } from 'react-router-dom';
 import { ActivityItem, LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
-import { updateProject } from '@/lib/redux/slice/projectSlice';
 import { getFile } from '@/lib/redux/slice/librarySlice';
 import UploadBtnWrap from './UploadBtnWrap';
 import { getFileReaderUrl } from '@/utils/fileReader';
@@ -82,7 +81,6 @@ export function AIAssistant() {
     const project = projects.find(item=>item.id.toLowerCase()===uid)
     if(project){
       setProject(project)
-      setMessages(project.conversation)
     }
   },[uid,projects])
 
@@ -157,7 +155,7 @@ export function AIAssistant() {
         },
       timestamp: new Date().toISOString()
     };
-    await dispatch(updateProject({message: userMessage,uid:uid}))
+    // await dispatch(updateProject({message: userMessage,uid:uid}))
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -177,7 +175,7 @@ export function AIAssistant() {
           category: detectCategory(inputValue),
           confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
         };
-        await dispatch(updateProject({message: assistantMessage,uid:uid}))
+        // await dispatch(updateProject({message: assistantMessage,uid:uid}))
         setMessages(prev => [...prev, assistantMessage]);
     } 
       
