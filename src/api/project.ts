@@ -51,12 +51,13 @@ export const createProject = async ({
 export const getProjects = async (id:string) => {
   try {
     if(!id) return
+    const access_token = id
     const response = await axios.get(
       "https://backend-service-production-c674.up.railway.app/api/v1/projects",
       {
         headers: {
           "Accept": "application/json",
-          "Authorization": `Bearer ${id}`
+          "Authorization": `Bearer ${access_token}`
         },
       }
     );
@@ -65,6 +66,33 @@ export const getProjects = async (id:string) => {
   } catch (error) {
     console.error(
       "Error fetching projects:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+export const sendMessageToProject = async (id:string, access:string, message:string) => {
+  try {
+    if(!id||!access) return
+    const response = await axios.post(
+      `${url}/api/v1/projects/${id}/messages`,
+      {
+        message
+      },
+      {
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${access}`
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(  
+      "Error sending message to project:",
       error.response?.data || error.message
     );
     throw error;
