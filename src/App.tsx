@@ -91,7 +91,7 @@ const App = () => {
                 <AIAssistant />
               </ProtectedRoutes>
               } />
-          </Route>
+            </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
     </TooltipProvider>

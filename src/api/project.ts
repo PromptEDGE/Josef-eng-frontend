@@ -1,4 +1,4 @@
-import { CreateProjectType } from "@/utils/types";
+import { CreateProjectType, LibraryItem } from "@/utils/types";
 import axios from "axios";
 
 const url = import.meta.env.VITE_BACKEND_URL
@@ -98,3 +98,32 @@ export const sendMessageToProject = async (id:string, access:string, message:str
     throw error;
   }
 };
+
+export const getLibrary = async (access:string)=>{
+  try {
+    if(!access) return
+    const res = await axios.get(`${url}/api/v1/library`)
+    if(res.status!==200) throw new Error('Failed to fetch library')
+    return res.data
+    
+  } catch (error) {
+      console.error('Project creation failed:', error.response?.data || error.message);
+  }
+}
+
+
+export const addToLibrary = async ({library,access}:{library:LibraryItem,access:string})=>{
+  try {
+    if(!access||!library) return
+    const res = await axios.post(`${url}/api/v1/library`, library, {
+      'headers': {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    })
+    return res.data
+    
+  } catch (error) {
+    console.error('Project creation failed:', error.response?.data || error.message);
+  }
+}
