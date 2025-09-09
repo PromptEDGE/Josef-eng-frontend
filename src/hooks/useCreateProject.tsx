@@ -14,6 +14,7 @@ const useCreateProject = () => {
     const {mutate, error, data} = useMutation({
         mutationFn: (formData: CreateProjectType) => createProject(formData),
         onSuccess: (data) => {
+        console.log(data)
         refetchProjects()
         toast({
             title: "Success",
