@@ -11,16 +11,15 @@ const useCreateProject = () => {
     const {refetchProjects} = useProjects()
     const navigate = useNavigate()
     const dispatch = useDispatch()
-    const {mutate, error, data} = useMutation({
+    const {mutate, error, data, isPending} = useMutation({
         mutationFn: (formData: CreateProjectType) => createProject(formData),
         onSuccess: (data) => {
-        console.log(data)
         refetchProjects()
         toast({
             title: "Success",
             description: "Project created successfully.",
         });
-        // navigate(`/project/${data?.id}`);
+        navigate(`/project/${data?.id}`);
         },
         onError: (error) => {
         toast({
@@ -33,7 +32,8 @@ const useCreateProject = () => {
     return {
         mutate,
         data,
-        error
+        error,
+        isPending
     };
 }
  

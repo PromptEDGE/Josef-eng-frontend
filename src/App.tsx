@@ -91,6 +91,12 @@ const App = () => {
                 <AIAssistant />
               </ProtectedRoutes>
               } />
+              <Route path="upload" element={
+              <ProtectedRoutes>
+                <FileUpload />
+              </ProtectedRoutes>
+              } />
+
             </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

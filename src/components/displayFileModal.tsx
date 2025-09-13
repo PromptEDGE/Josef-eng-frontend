@@ -51,7 +51,7 @@ const DisplayFileModal: React.FC<DisplayFileModalProps> = ({ item,download,cance
   };
 
   return (
-    <Card className="relative w-full sm:w-[400px] lg:w-[600px] mx-auto p-4">
+    <Card className="relative w-full z-50 sm:w-[400px] lg:w-[600px] mx-auto p-4">
       <X onClick={()=>cancel(null)} className='cursor-pointer absolute right-5 top-5 ' />
       <CardHeader>
         <CardTitle className="text-xl">{item.name}</CardTitle>
