@@ -26,7 +26,7 @@ const projectSlice = createSlice({
                 timestamp: new Date().toISOString(),
                 category: 'general'
             }
-            action.payload.conversation.push(firstMessage)
+            // action.payload.conversation.push(firstMessage)
             state.project = addtoproject
           },
           updateProject: (state, action: PayloadAction<{ message: Message; uid: string }>) => {
@@ -36,7 +36,7 @@ const projectSlice = createSlice({
             const project = state.project.find(p => p.id.toLowerCase() === uid.toLowerCase());
 
             if (project) {
-                project.conversation.push(message);
+                // project.conversation.push(message);
             } else {
                 console.warn(`No project found with uid: ${uid}`);
             }
@@ -47,5 +47,5 @@ const projectSlice = createSlice({
 
     }
 })
-export const { createNew, updateProject, getAllProject } = projectSlice.actions;
+export const { getAllProject } = projectSlice.actions;
 export default projectSlice.reducer

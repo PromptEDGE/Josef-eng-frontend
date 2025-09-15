@@ -20,8 +20,11 @@ const librarySlice = createSlice({
             const stored=localStorage.getItem("library")
             state.library = stored ? JSON.parse(stored) : [];
 
+        },
+        getAllLibrary: (state,action:PayloadAction<LibraryItem[]>)=>{
+            state.library = action.payload
         }
     }
 })
-export const { getFile } = librarySlice.actions
+export const { getFile,getAllLibrary } = librarySlice.actions
 export default librarySlice.reducer 

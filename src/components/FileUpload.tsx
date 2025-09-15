@@ -1,4 +1,11 @@
 import { useState, useCallback } from 'react';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { useDropzone } from 'react-dropzone';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,8 +22,13 @@ import {
   Loader2,
   Image,
   Video,
-  Music
+  Music,
+  Loader2Icon
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/redux/store';
+import useUploadDocument from '@/hooks/useUploadFiles';
+import { ProjectData } from '@/utils/types';
 
 interface UploadedFile {
   id: string;
@@ -73,31 +85,62 @@ const acceptedFileTypes = {
 };
 
 export function FileUpload() {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const { uploadFile, isPending } = useUploadDocument()
+  const projects = useSelector((state:RootState)=>state.project.project)
+  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const [selectedProject, setSelectedProject] = useState<ProjectData|null>(null);
+  const [file, setFile] = useState<File|null>(null);
   const { toast } = useToast();
 
+  const upload = async()=>{
+    if (!file) {
+      toast({
+        title: "Error",
+        description: "Please select a file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if(!selectedProject){
+      toast({
+        title: "Error",
+        description: "Please select a project to upload the file to.",
+        variant: "destructive",
+      });
+      return;
+    }
+    await uploadFile({
+      projId:selectedProject.id,
+      access_token:user?.access_token,
+      type:file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',
+      file:file},{
+        onSuccess:()=>{
+          toast({
+            title: "File uploaded",
+            description: `${file.name} has been uploaded`,
+          });
+          setFile(null);
+        },
+        onError:(error)=>{
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+          setFile(null);
+        }
+      })
+  }
+  
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: UploadedFile[] = acceptedFiles.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      status: 'uploading',
-      progress: 0,
-      category: getFileCategory(file.type)
-    }));
-
-    setFiles(prev => [...prev, ...newFiles]);
-
-    // Simulate upload and processing
-    newFiles.forEach(file => {
-      simulateFileProcessing(file.id);
-    });
-
-    toast({
-      title: "Files uploaded",
-      description: `${acceptedFiles.length} file(s) are being processed`,
-    });
+    if (acceptedFiles.length > 0) {
+      // Only accept the first file, replace any previous file
+      setFile(acceptedFiles[0]);
+      toast({
+        title: "File uploaded",
+        description: `${acceptedFiles[0].name} is ready for preview and upload`,
+      });
+    }
   }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -105,31 +148,6 @@ export function FileUpload() {
     accept: acceptedFileTypes,
     maxSize: 100 * 1024 * 1024, // 100MB
   });
-
-  const simulateFileProcessing = (fileId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15;
-      
-      setFiles(prev => prev.map(file => {
-        if (file.id === fileId) {
-          if (progress >= 50 && file.status === 'uploading') {
-            return { ...file, status: 'processing', progress: Math.min(progress, 100) };
-          } else if (progress >= 100) {
-            clearInterval(interval);
-            return { 
-              ...file, 
-              status: 'completed', 
-              progress: 100,
-              extractedData: generateMockExtractedData(file.category)
-            };
-          }
-          return { ...file, progress: Math.min(progress, 100) };
-        }
-        return file;
-      }));
-    }, 200);
-  };
 
   const generateMockExtractedData = (category: UploadedFile['category']): string => {
     switch (category) {
@@ -146,8 +164,8 @@ export function FileUpload() {
     }
   };
 
-  const removeFile = (fileId: string) => {
-    setFiles(prev => prev.filter(file => file.id !== fileId));
+  const removeFile = (file: null|File) => {
+    setFile(file);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -160,12 +178,62 @@ export function FileUpload() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Document Upload & Processing</h1>
-        <p className="text-muted-foreground">
-          Upload technical documents, drawings, specifications, and media files for AI analysis
-        </p>
+      <div className="w-full flex items-center justify-between flex-wrap sm:flex-nowrap ">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Document Upload & Processing</h1>
+          <p className="text-muted-foreground">
+            Upload technical documents, drawings, specifications, and media files for AI analysis
+          </p>
+        </div>
+        {/* Upload Button (shadcn/ui) */}
+        <div className="flex justify-center mb-6">
+          <Button
+            variant="default"
+            size="lg"
+            className="gap-2 px-6 py-3 text-base font-semibold shadow-md"
+            onClick={upload}
+            disabled={isPending}
+          >
+            {isPending?(
+              <>
+                <Loader2Icon className='w-5 h-5 animate-spin' /> Uploading...
+              </>
+              )
+              :
+              (
+                <>
+                  <Upload className="w-5 h-5" /> Upload
+                </>
+            )}
+          </Button>
+        </div>
       </div>
+      {/* Project Dropdown (shadcn/ui Select) */}
+      {projects && projects.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-foreground mb-1">Select Project</label>
+          <Select
+            value={selectedProject ? selectedProject.id : ""}
+            onValueChange={id => {
+              const proj = projects.find((p: ProjectData) => p.id === id) || null;
+              setSelectedProject(proj);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project: ProjectData) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name || `Project ${project.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+
 
       {/* Upload Zone */}
       <Card className="border-2 border-dashed border-border hover:border-primary transition-smooth">
@@ -198,72 +266,47 @@ export function FileUpload() {
         </div>
       </Card>
 
-      {/* File List */}
-      {files.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Processing Files ({files.length})
-          </h3>
-          <div className="space-y-4">
-            {files.map((file) => {
-              const FileIcon = getFileIcon(file.category);
-              return (
-                <div key={file.id} className="flex items-center gap-4 p-4 border border-border rounded-lg">
-                  <div className="w-10 h-10 bg-gradient-card rounded-lg flex items-center justify-center">
-                    <FileIcon className="w-5 h-5 text-primary" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-foreground truncate">{file.name}</p>
-                      <Badge variant="outline" className="text-xs">
-                        {file.category}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
-                    
-                    {/* Progress Bar */}
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {file.status === 'uploading' ? 'Uploading...' :
-                           file.status === 'processing' ? 'Processing...' :
-                           file.status === 'completed' ? 'Completed' : 'Error'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{file.progress.toFixed(0)}%</span>
-                      </div>
-                      <Progress value={file.progress} className="h-1" />
-                    </div>
-
-                    {/* Extracted Data */}
-                    {file.extractedData && (
-                      <p className="text-xs text-success mt-2">{file.extractedData}</p>
-                    )}
-                  </div>
-
-                  {/* Status Icon */}
-                  <div className="flex items-center gap-2">
-                    {file.status === 'uploading' || file.status === 'processing' ? (
-                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                    ) : file.status === 'completed' ? (
-                      <CheckCircle className="w-5 h-5 text-success" />
-                    ) : (
-                      <AlertCircle className="w-5 h-5 text-destructive" />
-                    )}
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile(file.id)}
-                      className="h-8 w-8 p-0 hover:bg-destructive/10"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* File Preview */}
+      {file && (
+        <Card className="p-6 mb-6 flex items-center justify-center flex-col ">
+          <h3 className="text-lg font-semibold text-foreground mb-4">File Preview</h3>
+          {file.type.startsWith('image') && (
+            <img
+              src={URL.createObjectURL(file)}
+              alt={file.name}
+              className="max-w-full max-h-64 rounded shadow"
+            />
+          )}
+          {file.type.startsWith('video') && (
+            <video
+              src={URL.createObjectURL(file)}
+              controls
+              className="max-w-full max-h-64 rounded shadow"
+            />
+          )}
+          {file.type.startsWith('audio') && (
+            <audio
+              src={URL.createObjectURL(file)}
+              controls
+              className="w-full"
+            />
+          )}
+          {file.type === 'application/pdf' && (
+            <iframe
+              src={URL.createObjectURL(file)}
+              title={file.name}
+              className="w-full h-64 border rounded"
+            />
+          )}
+          {!file.type.startsWith('image') &&
+            !file.type.startsWith('video') &&
+            !file.type.startsWith('audio') &&
+            file.type !== 'application/pdf' && (
+            <div className="text-muted-foreground">
+              <p><strong>Name:</strong> {file.name}</p>
+              <p><strong>Type:</strong> {file.type}</p>
+            </div>
+          )}
         </Card>
       )}
 

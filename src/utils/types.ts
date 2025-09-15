@@ -10,7 +10,7 @@ export interface ProjectData {
   location: string;
   description: string;
   systems: string[];
-  conversation?: Message[]
+  // conversation?: Message[]
   user_id: string
   created_at: string;
   updated_at: string;

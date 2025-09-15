@@ -19,7 +19,8 @@ import {
   Copy,
   ThumbsUp,
   ThumbsDown,
-  Paperclip
+  Paperclip,
+  Dot
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import MessageFile from './MessageFile';
@@ -27,12 +28,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { useParams } from 'react-router-dom';
 import { ActivityItem, LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
-import { updateProject } from '@/lib/redux/slice/projectSlice';
 import { getFile } from '@/lib/redux/slice/librarySlice';
 import UploadBtnWrap from './UploadBtnWrap';
 import { getFileReaderUrl } from '@/utils/fileReader';
 import { createNewProposal } from '@/lib/redux/slice/proposalSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
+import useSendMessage from '@/hooks/useSendMessage';
+import useUploadDocument from '@/hooks/useUploadFiles';
 
 
 
@@ -58,17 +60,50 @@ const predefinedQuestions = [
     icon: Search
   }
 ];
+type ProjectHistory = {
+  role: string;
+  content: string;
+};
+
+type ProjectDetails = {
+  project_budget: string;
+  project_client: string;
+  project_description: string;
+  project_end_date: string;
+  project_id: string;
+  project_location: string;
+  project_name: string;
+  project_priority: string;
+  project_start_date: string;
+  project_systems: string[];
+  project_type: string;
+};
+
+type ProjectSource = {
+  source: string;
+};
+
+type ResponseData = {
+  answer: string;
+  history: ProjectHistory[];
+  prompt: string;
+  project: ProjectDetails;
+  user: string;
+  sources: ProjectSource[];
+};
 
 export function AIAssistant() {
   const params = useParams()
-  const uid = params.uid as string 
+  const uid = params.uid as string ;
+  const { sendMessage, isPending:MsgLoading, isError:MsgError } = useSendMessage()
+  const { uploadFile, isPending:FileLoading, isError:FileError } = useUploadDocument()
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
+  const user = useSelector((state:RootState)=>state.localStorage.user)
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [file, setFile] = useState<File|undefined>(undefined);
   const [preview,setPreview] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [showUpload, setShowUpload] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,7 +117,6 @@ export function AIAssistant() {
     const project = projects.find(item=>item.id.toLowerCase()===uid)
     if(project){
       setProject(project)
-      setMessages(project.conversation)
     }
   },[uid,projects])
 
@@ -103,10 +137,25 @@ export function AIAssistant() {
     };
 
   const handleSendMessage = async () => {
-    // if (!inputValue.trim() || isLoading) return;
     let localUrl: string;
     // if there is file send also and turn to string
+
+
     if (file) {
+
+      // send to ai
+      await uploadFile(
+        {type: file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',file,projId:project.id,access_token:user?.access_token},
+        {
+          onSuccess: (data)=>{
+            const res:ResponseData = data
+          },
+          onError: (error)=>{
+            console.log(error)
+          }
+        }
+      )
+      
         const filedata = new FormData();
         filedata.append('file', file);
 
@@ -148,6 +197,28 @@ export function AIAssistant() {
       }
       await dispatch(addActivity(activity))
     }
+    // send prompt to ai and get response back
+    await sendMessage({id:project.id,access:user?.access_token,message:inputValue},{
+      onSuccess: (data)=>{
+        const res:ResponseData = data
+        const assistantMessage: Message = {
+          id: uuidv4(),
+          type: 'assistant',
+          content: {
+            text: res.answer,
+            // fileUrl: localUrl
+          },
+          timestamp: new Date().toISOString(),
+          category: detectCategory(inputValue),
+          confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
+        };
+        setMessages(prev=>[...prev,assistantMessage])
+      },
+      onError: (error)=>{
+        console.log(error)
+      }
+    })
+    // update ui message
     const userMessage: Message = {
       id: uuidv4(),
       type: 'user',
@@ -157,31 +228,12 @@ export function AIAssistant() {
         },
       timestamp: new Date().toISOString()
     };
-    await dispatch(updateProject({message: userMessage,uid:uid}))
+
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
-    setIsLoading(true);
-    setFile(undefined)
-    setPreview("")
-
-    // Simulate AI response
-    if(inputValue.trim()){
-      const assistantMessage: Message = {
-          id: uuidv4(),
-          type: 'assistant',
-          content: {
-           text: inputValue.trim() && generateAIResponse(inputValue),
-            // fileUrl: localUrl
-          },
-          timestamp: new Date().toISOString(),
-          category: detectCategory(inputValue),
-          confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
-        };
-        await dispatch(updateProject({message: assistantMessage,uid:uid}))
-        setMessages(prev => [...prev, assistantMessage]);
-    } 
+    setFile(undefined);
+    setPreview("");
       
-      setIsLoading(false);
   };
 
   const detectCategory = (input: string): Message['category'] => {
@@ -271,10 +323,6 @@ Would you like specific equipment recommendations or load calculations?`;
 
 Could you provide more specific details about your project requirements? This will help me give you more targeted recommendations and calculations.`;
   };
-
-  // const handleQuestionClick = (question: string) => {
-  //   setInputValue(question);
-  // };
 
   const toggleListening = () => {
     setIsListening(!isListening);
@@ -392,7 +440,6 @@ Could you provide more specific details about your project requirements? This wi
                     <Brain className="w-4 h-4 text-primary-foreground" />
                   </div>
                 )}
-                
                 <div className={`max-w-[80%] ${message.type === 'user' ? 'order-1' : ''}`}>
                   <div
                     className={`p-3 rounded-lg  flex flex-col gap-2 items-start justify-start ${
@@ -409,39 +456,39 @@ Could you provide more specific details about your project requirements? This wi
                     
                     
                     {message.type === 'assistant' && (
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
-                        <div className="flex items-center gap-2">
-                          {message.category && (
-                            <Badge variant="secondary" className="text-xs">
-                              {message.category}
-                            </Badge>
-                          )}
-                          {message.confidence && (
-                            <span className="text-xs opacity-70">
-                              {Math.round(message.confidence * 100)}% confidence
-                            </span>
-                          )}
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
+                          <div className="flex items-center gap-2">
+                            {message.category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {message.category}
+                              </Badge>
+                            )}
+                            {message.confidence && (
+                              <span className="text-xs opacity-70">
+                                {Math.round(message.confidence * 100)}% confidence
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex justify-start items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyToClipboard(message.content.text)}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <ThumbsUp className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <ThumbsDown className="w-3 h-3" />
+                            </Button>
+                            <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="" >
+                              create proposal
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex justify-start items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => copyToClipboard(message.content.text)}
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <ThumbsUp className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <ThumbsDown className="w-3 h-3" />
-                          </Button>
-                          <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="" >
-                            create proposal
-                          </Button>
-                        </div>
-                      </div>
                     )}
                   </div>
                   
@@ -460,7 +507,7 @@ Could you provide more specific details about your project requirements? This wi
               </div>
             ))}
             
-            {isLoading && (
+            {MsgLoading && (
               <div className="flex gap-3 justify-start">
                 <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
                   <Brain className="w-4 h-4 text-primary-foreground" />
@@ -473,6 +520,12 @@ Could you provide more specific details about your project requirements? This wi
                 </div>
               </div>
             )}
+            {MsgError||FileError&&(
+              <div className="flex justify-center items-center w-full">
+                <p className="text-center text-red-500 text-sm  ">An error occurred while processing your request. Please try again later.</p>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -511,7 +564,7 @@ Could you provide more specific details about your project requirements? This wi
                   size="sm"
                   className="h-6 w-6 p-0"
                   onClick={handleSendMessage}
-                  disabled={(!inputValue.trim() && !file) || isLoading}
+                  disabled={(!inputValue.trim() && !file) || MsgLoading}
                 >
                   <Send className="w-4 h-4" />
                 </Button>

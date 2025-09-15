@@ -27,6 +27,7 @@ import {
   Zap,
   Droplets,
   FolderCheck,
+  LoaderIcon,
 } from 'lucide-react';
 import { ActivityItem, CreateProjectType, ProjectData } from '@/utils/types';
 import { useDispatch, useSelector } from 'react-redux';
@@ -92,7 +93,7 @@ export default function NewProjectPage() {
     description: '',
     systems: [],
   }
-  const {mutate, data} = useCreateProject()
+  const {mutate, data, isPending } = useCreateProject()
   const dispatch = useDispatch()
   const user = useSelector((state:RootState)=>state.localStorage.user)
   const { toast } = useToast();
@@ -192,8 +193,17 @@ export default function NewProjectPage() {
             disabled={!isFormValid()}
             className="bg-gradient-primary text-primary-foreground shadow-elegant"
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Create Project
+            {isPending?(
+              <>
+                <LoaderIcon className="animate-spin" />
+                <span>Creating Project...</span>
+              </>
+            ):(
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Create Project
+              </>
+            )}
           </Button>
         </div>
       </div>

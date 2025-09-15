@@ -1,4 +1,4 @@
-import { CreateProjectType } from "@/utils/types";
+import { CreateProjectType, LibraryItem } from "@/utils/types";
 import axios from "axios";
 
 const url = import.meta.env.VITE_BACKEND_URL
@@ -51,12 +51,13 @@ export const createProject = async ({
 export const getProjects = async (id:string) => {
   try {
     if(!id) return
+    const access_token = id
     const response = await axios.get(
       "https://backend-service-production-c674.up.railway.app/api/v1/projects",
       {
         headers: {
           "Accept": "application/json",
-          "Authorization": `Bearer ${id}`
+          "Authorization": `Bearer ${access_token}`
         },
       }
     );
@@ -70,3 +71,4 @@ export const getProjects = async (id:string) => {
     throw error;
   }
 };
+

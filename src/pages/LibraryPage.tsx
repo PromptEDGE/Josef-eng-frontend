@@ -27,6 +27,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import DisplayFileModal from '@/components/displayFileModal';
 import { handleDownload } from '@/utils/handleDownload';
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -38,6 +39,8 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedFile,setSelectedFile] = useState<LibraryItem|null>(null)
+
+  const navigate = useNavigate()
   
   const filteredItems = libraryItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||  item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -65,7 +68,6 @@ export default function LibraryPage() {
   };
 
   const selectedItem = (select: LibraryItem)=>{
-    console.log(select)
     setSelectedFile(select)
   }
 
@@ -180,8 +182,8 @@ export default function LibraryPage() {
     setLibraryItems(library)
   },[library])
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col gap-4">
+    <div className="container mx-auto p-6 flex flex-col gap-6 ">
+      <div className="  flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Project Library</h1>
@@ -189,7 +191,9 @@ export default function LibraryPage() {
               Manage videos, audio recordings, and documents for your projects.
             </p>
           </div>
-          <Button className="flex items-center gap-2">
+          <Button onClick={()=>{
+            navigate("/upload")
+          }} className="flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload Files
           </Button>
@@ -275,9 +279,8 @@ export default function LibraryPage() {
           initial={{opacity: 0,scale: 0.9}}
           animate={{opacity: 1,scale: 1}}
           exit={{opacity: 0,scale: 0.9}}
-        className="w-full h-dvh bg-white/80 flex items-center justify-center fixed inset-0 ">
-          <X onClick={()=>setSelectedFile(null)} className='cursor-pointer absolute right-5 top-5 ' />
-          <DisplayFileModal download={handleDownload} item={selectedFile} />
+        className="w-full h-dvh backdrop-blur flex items-center justify-center fixed inset-0 ">
+          <DisplayFileModal cancel={(state: LibraryItem|null)=>setSelectedFile(state)} download={handleDownload} item={selectedFile} />
         </motion.div>
         }
       </AnimatePresence>

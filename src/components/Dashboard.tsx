@@ -172,7 +172,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => onViewChange('/upload-file')}
+                onClick={() => onViewChange('/upload ')}
                 className="border-primary-foreground/10 text-black hover:text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <Upload className="w-4 h-4 mr-2" />
@@ -186,7 +186,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.id} className="p-6 hover:shadow-elegant transition-smooth">
+          <Card key={stat.id} className="p-6 hover:shadow-elegant transition-all duration-300 transform transition-smooth">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
@@ -216,12 +216,12 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                 className="p-6 cursor-pointer hover:shadow-elegant transition-smooth group"
                 onClick={() => onViewChange(action.action)}
               >
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-smooth`}>
+                <div className="flex items-start gap-4 transition-all duration-300 transform ">
+                  <div className={`w-12 h-12 ${action.color} transition-all duration-300 transform rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-smooth`}>
                     <action.icon className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-smooth">
+                    <h3 className="transition-all duration-300 transform font-semibold text-foreground group-hover:text-primary transition-smooth">
                       {action.title}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">

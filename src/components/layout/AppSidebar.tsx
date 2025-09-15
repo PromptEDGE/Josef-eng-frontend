@@ -31,6 +31,7 @@ import { RootState } from '@/lib/redux/store';
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Standards', url: '/standards', icon: BookOpen },
+  { title: 'Uploads', url: '/upload', icon: PlusCircle }
 ];
 
 const projectNavItems = [
