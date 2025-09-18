@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, ChangeEvent, ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, ChangeEvent, ReactNode, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ import { createNewProposal } from '@/lib/redux/slice/proposalSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
 import useSendMessage from '@/hooks/useSendMessage';
 import useUploadFiles, { UploadStatus } from '@/hooks/useUploadFiles';
+import useProjectChat from '@/hooks/useProjectChat';
 import UploadBtnWrap from './UploadBtnWrap';
 import { Progress } from '@/components/ui/progress';
 
@@ -105,12 +106,11 @@ export function AIAssistant() {
   } = useUploadFiles()
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { project: projectDetail, messages, isLoading: isProjectLoading, appendMessage } = useProjectChat(uid);
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState<boolean>(false);
   const [showUploadOptions, setShowUploadOptions] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [project,setProject] = useState<ProjectData|null>(null)
   const { toast } = useToast();
   const handledUploadIdsRef = useRef(new Set<string>());
 
@@ -168,12 +168,13 @@ export function AIAssistant() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  const findProject = useCallback(()=>{
-    const project = projects.find(item=>item.id.toLowerCase()===uid)
-    if(project){
-      setProject(project)
-    }
-  },[uid,projects])
+
+  const project = useMemo<ProjectData | null>(() => {
+    if (!uid) return null;
+    if (projectDetail) return projectDetail;
+    const fallback = projects.find(item => item.id.toLowerCase() === uid?.toLowerCase());
+    return fallback ?? null;
+  }, [projectDetail, projects, uid]);
 
   const handleSendMessage = async () => {
     const prompt = inputValue.trim();
@@ -200,7 +201,7 @@ export function AIAssistant() {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    appendMessage(userMessage);
     setInputValue('');
 
     sendMessage(
@@ -218,7 +219,7 @@ export function AIAssistant() {
             category: detectCategory(prompt),
             confidence: Math.random() * 0.3 + 0.7,
           };
-          setMessages((prev) => [...prev, assistantMessage]);
+          appendMessage(assistantMessage);
         },
         onError: (error) => {
           console.log(error);
@@ -226,6 +227,14 @@ export function AIAssistant() {
             title: 'Unable to send message',
             description: 'Please try again in a moment.',
             variant: 'destructive',
+          });
+          appendMessage({
+            id: uuidv4(),
+            type: 'system',
+            content: {
+              text: 'Message failed to send. Please try again.',
+            },
+            timestamp: new Date().toISOString(),
           });
         },
       }
@@ -264,85 +273,6 @@ export function AIAssistant() {
     return 'general';
   };
 
-  const generateAIResponse = (input: string): string => {
-    const lower = input.toLowerCase();
-    
-    if (lower.includes('cooling load') || lower.includes('calculate')) {
-      return `Based on your request for cooling load calculation, I'll help you determine the requirements for a 5000 sq ft office space:
-
-**Heat Load Components:**
-• Sensible heat gain from occupants: ~45,000 BTU/hr (150 people × 300 BTU/hr)
-• Lighting load: ~25,000 BTU/hr (2.5 W/sq ft × 3.41 BTU/W)
-• Equipment load: ~30,000 BTU/hr (estimated)
-• Solar/envelope gains: ~20,000 BTU/hr (varies by orientation)
-
-**Total Cooling Load:** ~120,000 BTU/hr (10 tons)
-
-**Recommendations:**
-• Consider variable air volume (VAV) system for efficiency
-• Use ASHRAE 62.1 for ventilation requirements (15 cfm/person minimum)
-• Include 10-15% safety factor for design conditions
-
-Would you like me to provide detailed calculations for any specific component?`;
-    }
-    
-    if (lower.includes('ashrae') || lower.includes('standard')) {
-      return `Here are the key ASHRAE 90.1-2019 requirements for HVAC efficiency:
-
-**Equipment Efficiency Requirements:**
-• Air-cooled chillers >150 tons: minimum 9.562 EER, 14.04 IPLV
-• Water-cooled chillers >300 tons: minimum 5.50 COP, 6.84 IPLV
-• Packaged AC units: varies by capacity (13-14.4 EER typical)
-
-**System Requirements:**
-• Economizer controls required for units >54,000 BTU/hr in most climates
-• Variable speed drives required for fans >7.5 HP
-• Energy recovery required for systems >5,000 cfm with >70% outside air
-
-**Building Envelope:**
-• Updated insulation requirements
-• Window performance standards (U-factor and SHGC)
-
-Need specific details for your project's equipment or climate zone?`;
-    }
-
-    if (lower.includes('data center')) {
-      return `For data center cooling design, here are my recommendations:
-
-**Cooling Strategy:**
-• Precision air conditioning units with close-coupled cooling
-• Hot aisle/cold aisle containment to improve efficiency
-• Target supply temperature: 64-72°F, return temp: 80-85°F
-
-**Redundancy Requirements:**
-• N+1 minimum for critical loads
-• Consider 2N for high-availability requirements
-• Independent cooling zones for different IT equipment
-
-**Efficiency Measures:**
-• Variable speed fans and pumps
-• Economizer operation when ambient conditions allow
-• Consider liquid cooling for high-density racks (>15kW per rack)
-
-**Monitoring:**
-• Temperature and humidity sensors throughout space
-• Power usage effectiveness (PUE) monitoring
-• Integration with building management system
-
-Would you like specific equipment recommendations or load calculations?`;
-    }
-
-    return `I understand you're asking about "${input}". As your AI engineering assistant, I have access to extensive HVAC knowledge including:
-
-• Technical standards (ASHRAE, SMACNA, NFPA)
-• Equipment specifications and performance data
-• Design best practices and methodologies
-• Energy efficiency strategies
-• Code compliance requirements
-
-Could you provide more specific details about your project requirements? This will help me give you more targeted recommendations and calculations.`;
-  };
-
   const toggleListening = () => {
     setIsListening(!isListening);
     if (!isListening) {
@@ -366,6 +296,14 @@ Could you provide more specific details about your project requirements? This wi
     });
   };
   const createProposal = async (conversation: string)=> {
+    if (!project) {
+      toast({
+        title: 'Project unavailable',
+        description: 'Cannot create a proposal without a project context.',
+        variant: 'destructive',
+      });
+      return;
+    }
     const { 
         id:project_uid,
         name: projectName,
@@ -406,9 +344,8 @@ Could you provide more specific details about your project requirements? This wi
     await dispatch(addActivity(activity))
   }
   useEffect(() => {
-    findProject()
     scrollToBottom();
-  }, [messages,findProject]);
+  }, [messages]);
 
   useEffect(() => {
     projectUploads.forEach((task) => {
@@ -473,6 +410,11 @@ Could you provide more specific details about your project requirements? This wi
       <Card className="flex-1 flex flex-col">
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
+            {isProjectLoading && messages.length === 0 && (
+              <div className="flex justify-center py-10 text-sm text-muted-foreground">
+                Loading conversation…
+              </div>
+            )}
             {messages?.map((message) => (
               <div
                 key={message.id}
@@ -671,7 +613,7 @@ Could you provide more specific details about your project requirements? This wi
                   size="sm"
                   className="h-6 w-6 p-0"
                   onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || MsgLoading}
+                  disabled={!inputValue.trim() || MsgLoading || !project}
                 >
                   <Send className="w-4 h-4" />
                 </Button>
