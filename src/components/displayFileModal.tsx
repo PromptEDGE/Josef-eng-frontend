@@ -12,37 +12,39 @@ interface DisplayFileModalProps {
 }
 
 const DisplayFileModal: React.FC<DisplayFileModalProps> = ({ item,download,cancel }) => {
+  const mediaSource = item.thumbnail ?? item.downloadUrl;
+
   const renderMedia = () => {
     if (item.type === 'video') {
       return (
         <video
           controls
           className="w-full max-h-96 rounded-md"
-          poster={item.thumbnail}
-          src={item.thumbnail}
+          poster={mediaSource}
+          src={mediaSource}
         >
           Your browser does not support the video tag.
         </video>
       );
     } else if (item.type === 'audio') {
       return (
-        <audio controls className="w-full rounded-md" src={item.thumbnail}>
+        <audio controls className="w-full rounded-md" src={mediaSource}>
           Your browser does not support the audio element.
         </audio>
       );
     } else if (item.type === 'document') {
-      if (item.thumbnail?.startsWith('data:image')) {
+      if (mediaSource?.startsWith('data:image') || mediaSource?.endsWith('.png') || mediaSource?.endsWith('.jpg')) {
         return (
           <img
-            src={item.thumbnail}
+            src={mediaSource}
             alt={item.name}
             className="w-full max-h-96 object-contain rounded-md"
           />
         );
-      } else if (item.thumbnail?.startsWith('data:application')) {
+      } else if (mediaSource?.startsWith('data:application') || mediaSource?.endsWith('.pdf')) {
         return (
           <div className="flex items-center justify-center w-full h-48 bg-gray-100 rounded-md text-gray-500">
-            <iframe src={item.thumbnail} title="Document" className="w-full max-h-96" />
+            <iframe src={mediaSource} title="Document" className="w-full max-h-96" />
           </div>
         );
       }
@@ -63,19 +65,24 @@ const DisplayFileModal: React.FC<DisplayFileModalProps> = ({ item,download,cance
           <Badge variant="secondary">{item.type}</Badge>
           <Badge variant="secondary">{item.size}</Badge>
           {item.duration && <Badge variant="secondary">{item.duration}</Badge>}
-          <Badge variant="secondary">{item.uploadedAt.toLocaleDateString()}</Badge>
+          <Badge variant="secondary">{new Date(item.uploadedAt).toLocaleDateString()}</Badge>
         </div>
         {item.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {item.tags.map((tag) => (
               <Badge key={tag} variant="outline" className="text-xs">
-                {tag}
+                {tag.replace(/\b\w/g, (char) => char.toUpperCase())}
               </Badge>
             ))}
           </div>
         )}
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={()=>download(item.thumbnail,item.name)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => item.downloadUrl && download(item.downloadUrl, item.name)}
+            disabled={!item.downloadUrl}
+          >
             {item.type === 'video' || item.type === 'audio' ? <Play className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             <span className="ml-1 capitalize">download</span>
           </Button>

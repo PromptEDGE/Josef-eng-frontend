@@ -1,13 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import project from "./slice/projectSlice"
-import library from "./slice/librarySlice"
-import proposal from "./slice/proposalSlice"
-import activities from "./slice/activitySlice"
+import project from "./slice/projectSlice";
+import projectDetail from "./slice/projectDetailSlice";
+import library from "./slice/librarySlice";
+import proposal from "./slice/proposalSlice";
+import activities from "./slice/activitySlice";
 import localStorage from "./slice/localStorageSlice";
-import user from "./slice/userSlice"
+import user from "./slice/userSlice";
 export const store = configureStore({
     reducer: {
         project: project,
+        projectDetail,
         library: library,
         proposal:proposal,
         activites: activities,

@@ -17,7 +17,7 @@ const UploadFileBtn = ({children,accept,id,text,changeFile}:Prop) => {
   };
     return (
         <>
-            <div className="bg-white/50 text-black duration-500 transition-all transform group hover:scale-105 p-2 rounded-full flex items-center justify-start cursor-pointer ">
+            <div className=" text-black duration-500 transition-all transform group hover:scale-105 p-2 flex items-center justify-start cursor-pointer ">
                 <input key={inputKey} onChange={handleChange} hidden id={id} type="file" accept={accept} className="" />
                 <label htmlFor={id} className="cursor-pointer flex gap-1 items-center justify-start capitalize " >
                     {children}

@@ -1,17 +1,17 @@
-import { useState, useRef, useEffect, useCallback, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, ChangeEvent, ReactNode, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Send, 
-  Brain, 
-  User, 
-  FileText, 
-  Calculator, 
-  Lightbulb, 
+import {
+  Send,
+  Brain,
+  User,
+  FileText,
+  Calculator,
+  Lightbulb,
   Search,
   Mic,
   MicOff,
@@ -20,21 +20,22 @@ import {
   ThumbsUp,
   ThumbsDown,
   Paperclip,
-  Dot
+  XCircle,
+  Trash2,
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import MessageFile from './MessageFile';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { useParams } from 'react-router-dom';
-import { ActivityItem, LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
-import { getFile } from '@/lib/redux/slice/librarySlice';
-import UploadBtnWrap from './UploadBtnWrap';
-import { getFileReaderUrl } from '@/utils/fileReader';
+import { ActivityItem, Message, ProjectData, Proposal } from '@/utils/types';
 import { createNewProposal } from '@/lib/redux/slice/proposalSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
 import useSendMessage from '@/hooks/useSendMessage';
-import useUploadDocument from '@/hooks/useUploadFiles';
+import useUploadFiles, { UploadStatus } from '@/hooks/useUploadFiles';
+import useProjectChat from '@/hooks/useProjectChat';
+import UploadBtnWrap from './UploadBtnWrap';
+import { Progress } from '@/components/ui/progress';
 
 
 
@@ -96,76 +97,172 @@ export function AIAssistant() {
   const params = useParams()
   const uid = params.uid as string ;
   const { sendMessage, isPending:MsgLoading, isError:MsgError } = useSendMessage()
-  const { uploadFile, isPending:FileLoading, isError:FileError } = useUploadDocument()
+  const {
+    uploads: projectUploads,
+    uploadFiles: queueProjectUploads,
+    cancelUpload: cancelProjectUpload,
+    removeUpload: removeProjectUpload,
+    isUploading: isUploadingProject,
+  } = useUploadFiles()
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
-  const user = useSelector((state:RootState)=>state.localStorage.user)
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { project: projectDetail, messages, isLoading: isProjectLoading, appendMessage } = useProjectChat(uid);
   const [inputValue, setInputValue] = useState('');
-  const [files, setFiles] = useState<File|undefined>(undefined);
-  const [preview,setPreview] = useState<string>("")
   const [isListening, setIsListening] = useState<boolean>(false);
-  const [showUpload, setShowUpload] = useState<boolean>(false);
+  const [showUploadOptions, setShowUploadOptions] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [project,setProject] = useState<ProjectData|null>(null)
   const { toast } = useToast();
+  const handledUploadIdsRef = useRef(new Set<string>());
+
+  const uploadStatusConfig: Record<UploadStatus, { label: string; variant: 'secondary' | 'outline' | 'destructive' }> = {
+    queued: { label: 'Queued', variant: 'outline' },
+    uploading: { label: 'Uploading', variant: 'outline' },
+    success: { label: 'Uploaded', variant: 'secondary' },
+    error: { label: 'Failed', variant: 'destructive' },
+    canceled: { label: 'Canceled', variant: 'outline' },
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return '0 Bytes';
+    const units = ['Bytes', 'KB', 'MB', 'GB'];
+    const index = Math.min(
+      units.length - 1,
+      Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024)))
+    );
+    const size = bytes / Math.pow(1024, index);
+    return `${size.toFixed(1)} ${units[index]}`;
+  }
+
+  const renderFormattedText = (text: string): ReactNode[] => {
+    const fragments: ReactNode[] = [];
+    const segments = text.split(/(\*\*[^*]+\*\*)/g);
+
+    segments.forEach((segment, segIndex) => {
+      if (!segment) {
+        return;
+      }
+
+      const isBold = segment.startsWith('**') && segment.endsWith('**');
+      if (isBold) {
+        const content = segment.slice(2, -2);
+        fragments.push(
+          <strong key={`bold-${segIndex}`}>{content}</strong>
+        );
+        return;
+      }
+
+      const lines = segment.split('\n');
+      lines.forEach((line, lineIndex) => {
+        fragments.push(
+          <span key={`text-${segIndex}-${lineIndex}`}>{line}</span>
+        );
+        if (lineIndex < lines.length - 1) {
+          fragments.push(<br key={`br-${segIndex}-${lineIndex}`} />);
+        }
+      });
+    });
+
+    return fragments;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-
-  const findProject = useCallback(()=>{
-    const project = projects.find(item=>item.id.toLowerCase()===uid)
-    if(project){
-      setProject(project)
-    }
-  },[uid,projects])
-
-
-
-
+  const project = useMemo<ProjectData | null>(() => {
+    if (!uid) return null;
+    if (projectDetail) return projectDetail;
+    const fallback = projects.find(item => item.id.toLowerCase() === uid?.toLowerCase());
+    return fallback ?? null;
+  }, [projectDetail, projects, uid]);
 
   const handleSendMessage = async () => {
-    let localUrl: string;
-    setPreview("")
-    // send prompt to ai and get response back
-    await sendMessage({id:project.id,access:user?.access_token,message:inputValue},{
-      onSuccess: (data)=>{
-        const res:ResponseData = data
-        const assistantMessage: Message = {
-          id: uuidv4(),
-          type: 'assistant',
-          content: {
-            text: res.answer,
-            // fileUrl: localUrl
-          },
-          timestamp: new Date().toISOString(),
-          category: detectCategory(inputValue),
-          confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
-        };
-        setMessages(prev=>[...prev,assistantMessage])
-      },
-      onError: (error)=>{
-        console.log(error)
-      }
-    })
+    const prompt = inputValue.trim();
 
-    // update ui message
+    if (!prompt) {
+      return;
+    }
+
+    if (!project) {
+      toast({
+        title: 'Project unavailable',
+        description: 'Select or create a project before starting a chat.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const userMessage: Message = {
       id: uuidv4(),
       type: 'user',
       content: {
-        text: inputValue,
-        fileUrl: localUrl,
-        },
-      timestamp: new Date().toISOString()
+        text: prompt,
+      },
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    appendMessage(userMessage);
     setInputValue('');
-      
+
+    sendMessage(
+      { id: project.id, message: prompt },
+      {
+        onSuccess: (data) => {
+          const res: ResponseData = data;
+          const assistantMessage: Message = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: {
+              text: res.answer,
+            },
+            timestamp: new Date().toISOString(),
+            category: detectCategory(prompt),
+            confidence: Math.random() * 0.3 + 0.7,
+          };
+          appendMessage(assistantMessage);
+        },
+        onError: (error) => {
+          console.log(error);
+          toast({
+            title: 'Unable to send message',
+            description: 'Please try again in a moment.',
+            variant: 'destructive',
+          });
+          appendMessage({
+            id: uuidv4(),
+            type: 'system',
+            content: {
+              text: 'Message failed to send. Please try again.',
+            },
+            timestamp: new Date().toISOString(),
+          });
+        },
+      }
+    );
   };
+
+  const handleProjectFileSelection = useCallback(
+    (event?: ChangeEvent<HTMLInputElement>) => {
+      if (!project) {
+        toast({
+          title: 'Project unavailable',
+          description: 'Select or create a project before uploading files.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const fileList = event?.target?.files;
+      if (!fileList || fileList.length === 0) {
+        return;
+      }
+
+      const files = Array.from(fileList);
+      queueProjectUploads({ files, projectId: project.id });
+      setShowUploadOptions(false);
+    },
+    [project, queueProjectUploads, toast]
+  );
 
   const detectCategory = (input: string): Message['category'] => {
     const lower = input.toLowerCase();
@@ -175,7 +272,6 @@ export function AIAssistant() {
     if (lower.includes('troubleshoot') || lower.includes('problem') || lower.includes('fix')) return 'troubleshooting';
     return 'general';
   };
-
 
   const toggleListening = () => {
     setIsListening(!isListening);
@@ -201,50 +297,79 @@ export function AIAssistant() {
   };
 
 
-  const changeFile = async (e: ChangeEvent<HTMLInputElement>)=>{
-  const selectedFile = e.target.files[0]
+  // const changeFile = async (e: ChangeEvent<HTMLInputElement>)=>{
+  // const selectedFile = e.target.files[0]
 
-    if (selectedFile) {
-      await setFiles(selectedFile)
-      setShowUpload(false)
+  //   if (selectedFile) {
+  //     await setFiles(selectedFile)
+  //     setShowUpload(false)
 
-      const url = await getFileReaderUrl(selectedFile)
-      setPreview(url)
-      const fileType = files.type.startsWith('video')  ? 'VIDEO'
-         : files.type.startsWith('image') ? 'IMAGE' 
-         : files.type.startsWith('audio') ? 'AUDIO' 
-         : 'DOCUMENT';
+  //     const url = await getFileReaderUrl(selectedFile)
+  //     setPreview(url)
+  //     const fileType = files.type.startsWith('video')  ? 'VIDEO'
+  //        : files.type.startsWith('image') ? 'IMAGE' 
+  //        : files.type.startsWith('audio') ? 'AUDIO' 
+  //        : 'DOCUMENT';
 
-        await uploadFile(
-          {type: fileType,file:files,projId:project.id,access_token:user?.access_token},
-          {
-            onSuccess: async (data)=>{
-              const res:ResponseData = data
-              console.log(res)
-            },
-            onError: (error)=>{
-              console.log(error)
-              setPreview("")
-              toast({
-                title: "Error",
-                description: error.message,
-                variant: "destructive",
-              })
-            }
-          }
-        )
+  //       await uploadFile(
+  //         {type: fileType,file:files,projId:project.id,access_token:user?.access_token},
+  //         {
+  //           onSuccess: async (data)=>{
+  //             const res:ResponseData = data
+  //             console.log(res)
+  //           },
+  //           onError: (error)=>{
+  //             console.log(error)
+  //             setPreview("")
+  //             toast({
+  //               title: "Error",
+  //               description: error.message,
+  //               variant: "destructive",
+  //             })
+  //           }
+  //         }
+  //       )
         
-    }
-  }
+  //   }
+  // }
 
 
 
   useEffect(() => {
-    findProject()
     scrollToBottom();
-  }, [messages,findProject]);
+  }, [messages]);
 
+  useEffect(() => {
+    projectUploads.forEach((task) => {
+      if (!['success', 'error', 'canceled'].includes(task.status)) {
+        return;
+      }
 
+      if (handledUploadIdsRef.current.has(task.id)) {
+        return;
+      }
+
+      handledUploadIdsRef.current.add(task.id);
+
+      if (task.status === 'success') {
+        toast({
+          title: 'Upload complete',
+          description: `${task.file.name} uploaded successfully.`,
+        });
+      } else if (task.status === 'error') {
+        toast({
+          title: 'Upload failed',
+          description: task.error || `${task.file.name} failed to upload.`,
+          variant: 'destructive',
+        });
+      } else if (task.status === 'canceled') {
+        toast({
+          title: 'Upload canceled',
+          description: `${task.file.name} was canceled.`,
+        });
+      }
+    });
+  }, [projectUploads, toast]);
   return (
     <div className="relative p-6 h-full flex flex-col">
       <div className="mb-6">
@@ -277,6 +402,11 @@ export function AIAssistant() {
       <Card className="flex-1 flex flex-col">
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
+            {isProjectLoading && messages.length === 0 && (
+              <div className="flex justify-center py-10 text-sm text-muted-foreground">
+                Loading conversation…
+              </div>
+            )}
             {messages?.map((message) => (
               <div
                 key={message.id}
@@ -298,8 +428,12 @@ export function AIAssistant() {
                     }`}
                   >
                     
-                    {/* {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />} */}
-                    {message.content.text&&<div className="whitespace-pre-wrap text-sm">{message.content.text}</div>}
+                    {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />}
+                    {message.content.text && (
+                      <div className="text-sm whitespace-pre-wrap">
+                        {renderFormattedText(message.content.text)}
+                      </div>
+                    )}
                     
                     
                     {message.type === 'assistant' && (
@@ -367,7 +501,7 @@ export function AIAssistant() {
                 </div>
               </div>
             )}
-            {MsgError||FileError&&(
+            {MsgError && (
               <div className="flex justify-center items-center w-full">
                 <p className="text-center text-red-500 text-sm  ">An error occurred while processing your request. Please try again later.</p>
               </div>
@@ -378,17 +512,72 @@ export function AIAssistant() {
         </ScrollArea>
 
         {/* Input Area */}
-        {showUpload&&<div className="w-[300px] z-50 backdrop-blur p-3 absolute rounded-lg shadow bottom-[180px] ">
-          <UploadBtnWrap show={showUpload} changeFile={changeFile} />
-        </div>}
-        <div className="p-4 relative flex flex-col gap-6 border-t border-border">
-            {preview&&<div className="w-full h-full flex items-start justify-start gap-1 ">
-                <MessageFile  message={preview} uploading={FileLoading} />
-            </div>}
-            <div className="flex gap-2">
-              <Button 
-              onClick={()=>setShowUpload(prev=>!prev)}
-              variant="outline" size="sm" className="px-2">
+        <div className="p-4 space-y-4 border-t border-border">
+          {showUploadOptions && <div className="absolute bottom-[150px] z-30 w-[180px] p-3 shadow bg-transparent backdrop-blur rounded-lg ">
+            <UploadBtnWrap show={showUploadOptions} changeFile={handleProjectFileSelection} />
+          </div>}
+
+          {projectUploads.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-foreground">Project uploads</h4>
+                <span className="text-xs text-muted-foreground">
+                  {projectUploads.filter((task) => task.status === 'uploading' || task.status === 'queued').length} in progress
+                </span>
+              </div>
+              <div className="space-y-3">
+                {projectUploads.map((task) => {
+                  const statusMeta = uploadStatusConfig[task.status];
+                  const canCancel = task.status === 'uploading' || task.status === 'queued';
+                  const canRemove = task.status === 'success' || task.status === 'error' || task.status === 'canceled';
+
+                  return (
+                    <div key={task.id} className="rounded-lg border border-border bg-card px-3 py-2 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{task.file.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {formatFileSize(task.file.size)} · {task.messageType.toLowerCase()} · {task.file.type || 'unknown type'}
+                          </p>
+                        </div>
+                        <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <Progress value={task.progress} className="h-1.5" />
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{task.progress}%</span>
+                          {task.error && <span className="text-destructive">{task.error}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canCancel && (
+                          <Button variant="ghost" size="sm" onClick={() => cancelProjectUpload(task.id)}>
+                            <XCircle className="w-4 h-4 mr-1" /> Cancel
+                          </Button>
+                        )}
+                        {canRemove && (
+                          <Button variant="ghost" size="sm" onClick={() => removeProjectUpload(task.id)}>
+                            <Trash2 className="w-4 h-4 mr-1" /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <></>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="px-2"
+                onClick={() => setShowUploadOptions((prev) => !prev)}
+                disabled={!project || isUploadingProject}
+              >
                 <Paperclip className="w-4 h-4" />
               </Button>
               <div className="flex-1 relative">
@@ -396,7 +585,12 @@ export function AIAssistant() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Ask about calculations, standards, design recommendations..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                   className="pr-20"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -413,7 +607,7 @@ export function AIAssistant() {
                     size="sm"
                     className="h-6 w-6 p-0"
                     onClick={handleSendMessage}
-                    disabled={(!inputValue.trim()) || MsgLoading}
+                    disabled={!inputValue.trim() || MsgLoading || !project}
                   >
                     <Send className="w-4 h-4" />
                   </Button>
@@ -424,6 +618,7 @@ export function AIAssistant() {
               Ask about HVAC calculations, equipment sizing, energy codes, troubleshooting, or design recommendations
             </p>
         </div>
+      </div>
       </Card>
     </div>
   );

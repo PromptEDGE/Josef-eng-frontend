@@ -22,13 +22,17 @@ import {
   Sun,
   HelpCircle,
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { NavLink } from 'react-router-dom';
+import { clearTokens } from '@/utils/authTokens';
+import { clearUser as clearStoredUser } from '@/lib/redux/slice/localStorageSlice';
+import { clearUser as clearUserDetails } from '@/lib/redux/slice/userSlice';
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
   const user = useSelector((state:RootState)=>state.localStorage.user)
+  const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
 
@@ -37,12 +41,13 @@ export function TopBar() {
     document.documentElement.classList.toggle('dark');
   };
   const handleLogout = () => {
-    // Clear user data and redirect to login
-    const user = localStorage.getItem('user');
-    if (user) {
-      localStorage.removeItem('user');
-      window.location.href = '/';
-    }
+    // Clear tokens and user data, redirect to signin
+    clearTokens();
+    localStorage.removeItem('auth');
+    // Reset slices
+    dispatch(clearStoredUser());
+    dispatch(clearUserDetails());
+    window.location.href = '/signin';
   };
   return (
     <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center justify-between gap-4">

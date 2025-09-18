@@ -28,11 +28,13 @@ import { RootState } from '@/lib/redux/store';
 import DisplayFileModal from '@/components/displayFileModal';
 import { handleDownload } from '@/utils/handleDownload';
 import { useNavigate } from 'react-router-dom';
+import useGetLibrary from '@/hooks/useGetLibrary';
 
 
 
 export default function LibraryPage() {
   const library = useSelector((state:RootState)=>state.library.library)
+  const { isLoading, isError, refetch } = useGetLibrary()
   const [libraryItems,setLibraryItems] = useState<LibraryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -104,7 +106,12 @@ export default function LibraryPage() {
                  item.type === 'audio' ? <Play className="w-4 h-4" /> : 
                  <Eye className="w-4 h-4" />}
               </Button>
-              <Button onClick={()=>handleDownload(item.thumbnail,item.type)} variant="outline" size="sm">
+              <Button
+                onClick={() => item.downloadUrl && handleDownload(item.downloadUrl, item.name)}
+                variant="outline"
+                size="sm"
+                disabled={!item.downloadUrl}
+              >
                 <Download className="w-4 h-4" />
               </Button>
             </div>
@@ -119,7 +126,7 @@ export default function LibraryPage() {
           <div className="flex flex-wrap gap-1 mb-3">
             {item.tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
+                {tag.replace(/\b\w/g, (char) => char.toUpperCase())}
               </Badge>
             ))}
           </div>
@@ -127,7 +134,7 @@ export default function LibraryPage() {
             {/* <span>By {item.uploadedBy}</span> */}
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {item.uploadedAt.toLocaleDateString()}
+              {new Date(item.uploadedAt).toLocaleDateString()}
             </div>
           </div>
         </CardContent>
@@ -151,25 +158,29 @@ export default function LibraryPage() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{item.size}</span>
                   {item.duration && <span>{item.duration}</span>}
-                  {/* <span>By {item.uploadedBy}</span> */}
-                  <span>{item.uploadedAt.toLocaleDateString()}</span>
+                  <span>{new Date(item.uploadedAt).toLocaleDateString()}</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1">
                 {item.tags.slice(0, 3).map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-xs">
-                    {tag}
+                    {tag.replace(/\b\w/g, (char) => char.toUpperCase())}
                   </Badge>
                 ))}
               </div>
             </div>
             <div className="flex items-center gap-2 ml-4">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={()=>selectedItem(item)}>
                 {item.type === 'video' ? <Play className="w-4 h-4" /> : 
                  item.type === 'audio' ? <Play className="w-4 h-4" /> : 
                  <Eye className="w-4 h-4" />}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => item.downloadUrl && handleDownload(item.downloadUrl, item.name)}
+                disabled={!item.downloadUrl}
+              >
                 <Download className="w-4 h-4" />
               </Button>
             </div>
@@ -246,7 +257,20 @@ export default function LibraryPage() {
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-6">
-          {filteredItems.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-sm text-muted-foreground">Loading documents…</div>
+            </div>
+          ) : isError ? (
+            <Card>
+              <CardContent className="text-center py-12 space-y-3">
+                <div className="text-destructive">Unable to load your library right now.</div>
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
+          ) : filteredItems.length > 0 ? (
             viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredItems.map((item) => (

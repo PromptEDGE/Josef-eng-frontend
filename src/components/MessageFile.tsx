@@ -1,6 +1,6 @@
 import { Loader, X } from "lucide-react"
 
- const MessageFile = ({message,uploading}:{message: string,uploading:boolean})=>{
+ const MessageFile = ({message,uploading}:{message: string,uploading?:boolean})=>{
     return (
         <div  className="w-[130px] flex items-start justify-start h-[100px] relative ">
             {uploading&&(
