@@ -1,5 +1,6 @@
-import { SignInFormType, SignupFormType } from '@/utils/types';
+import { SignInFormType, SignupFormType, User } from '@/utils/types';
 import axios from 'axios';
+import apiClient from '@/api/client';
 const url = import.meta.env.VITE_BACKEND_URL as string;
 export const signUpUser = async ({ email, password, firstName: first_name, lastName:last_name }:SignupFormType) => {
   try {
@@ -24,7 +25,7 @@ export const signUpUser = async ({ email, password, firstName: first_name, lastN
     throw error.response?.data || error.message;
   }
 };
-export const signInUser = async ({ email, password }:SignInFormType) => {
+export const signInUser = async ({ email, password }:SignInFormType): Promise<User> => {
   try {
     const response = await axios.post(
       `${url}/api/v1/auth/signin`,
@@ -68,19 +69,32 @@ export const forgotPassword = async ({email, access}:{email:string,access:string
   }
 };
 
-export async function getUser(id:string) {
+export async function getUser(token: string) {
   try {
-    if(!id) throw  new Error("UnAuthorized")
-    const response = await axios.get(
-      `${url}/api/v1/auth/me`,
+    if (!token) throw new Error("UnAuthorized");
+    const response = await apiClient.get(`/api/v1/auth/me`);
+    return response.data;
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    throw error;
+  }
+}
+
+export async function refreshAccessToken(refresh_token: string) {
+  try {
+    const response = await axios.post(
+      `${url}/api/v1/auth/refresh`,
+      { refresh_token },
       {
         headers: {
           'accept': 'application/json',
-          'Authorization': `Bearer ${id}`
-        }
+          'Content-Type': 'application/json',
+        },
       }
     );
+    return response.data as { access_token: string; refresh_token?: string };
   } catch (error) {
-    console.error(error.response?.data || error.message);
+    console.error('Refresh token failed:', error.response?.data || error.message);
+    throw error;
   }
 }

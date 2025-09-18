@@ -3,14 +3,13 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { TopBar } from '@/components/layout/TopBar';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { getProjects } from '@/api/project';
+import { useMutation } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
-import { getAllProject } from '@/lib/redux/slice/projectSlice';
 import { getUser } from '@/api/auth';
 import { loadUser } from '@/lib/redux/slice/localStorageSlice';
 import useProjects from '@/hooks/useProjects';
+import { getUser as setUserDetails } from '@/lib/redux/slice/userSlice';
 
 export function AppLayout() {
   const { projects } = useProjects()
@@ -37,6 +36,11 @@ export function AppLayout() {
 
   const {mutate } = useMutation({
     mutationFn: (id:string)=>getUser(id),
+    onSuccess: (data) => {
+      if (data) {
+        dispatch(setUserDetails(data));
+      }
+    }
   })
   useEffect(() => {
     if(!user?.access_token) {

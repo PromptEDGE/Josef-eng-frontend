@@ -111,7 +111,6 @@ export function FileUpload() {
     }
     await uploadFile({
       projId:selectedProject.id,
-      access_token:user?.access_token,
       type:file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',
       file:file},{
         onSuccess:()=>{

@@ -172,7 +172,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => onViewChange('/upload ')}
+                onClick={() => onViewChange('/upload')}
                 className="border-primary-foreground/10 text-black hover:text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <Upload className="w-4 h-4 mr-2" />

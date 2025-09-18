@@ -1,25 +1,47 @@
-import axios from "axios";
-const url = import.meta.env.VITE_BACKEND_URL
+import apiClient from "@/api/client";
 
-export const uploadDocument = async ({type,file,projId,access_token}:{projId:string,access_token:string,type:"IMAGE"|"VIDEO"|"AUDIO"|"DOCUMENT",file:File}) => {
-  try {
-    const formData = new FormData();
-    formData.append("message_type", type);
-    formData.append("files", file);
+export type UploadProgress = {
+  loaded: number;
+  total?: number;
+  progress: number;
+};
 
-    const res = await axios.post(
-      `${url}/api/v1/projects/${projId}/uploads`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Accept: "application/json",
-          "Authorization": `Bearer ${access_token}`
-        },
-      }
-    );
-    return res.data;
-  } catch (err) {
-    console.error("Upload failed:", err);
+export interface UploadProjectFileOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: UploadProgress) => void;
+  metadata?: Record<string, string | Blob>;
+}
+
+export const uploadProjectFile = async (
+  projId: string,
+  file: File,
+  { signal, onProgress, metadata }: UploadProjectFileOptions = {}
+) => {
+  const formData = new FormData();
+  formData.append("files", file);
+  formData.append("file_name", file.name);
+  formData.append("mime_type", file.type);
+
+  if (metadata) {
+    Object.entries(metadata).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
   }
+
+  const response = await apiClient.post(
+    `/api/v1/projects/${projId}/uploads`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+      signal,
+      onUploadProgress: (event) => {
+        if (!onProgress) return;
+        const total = event.total ?? file.size;
+        const progress = total ? Math.round((event.loaded / total) * 100) : 0;
+        onProgress({ loaded: event.loaded, total, progress });
+      },
+    }
+  );
+
+  return response.data;
 };

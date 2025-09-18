@@ -10,8 +10,8 @@ const useProjects = () => {
     const user = useSelector((state:RootState)=>state.localStorage.user)
     const projects = useSelector((state:RootState)=>state.project.project)
     const { data,refetch:refetchProjects } = useQuery({
-        queryKey: ['projects',user?.access_token],
-        queryFn: ({queryKey}) => getProjects(queryKey[1]),
+        queryKey: ['projects'],
+        queryFn: () => getProjects(),
         staleTime: 1000 * 60 * 5, // 5 minutes
         enabled: !!user?.access_token
     })

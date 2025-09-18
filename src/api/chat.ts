@@ -1,21 +1,12 @@
-import axios from "axios";
+import apiClient from "@/api/client";
 
-const url = import.meta.env.VITE_BACKEND_URL
-
-export const sendMessageToProject = async ({id, access, message}:{id:string, access:string, message:string}) => {
+export const sendMessageToProject = async ({id, message}:{id:string, message:string}) => {
   try {
-    if(!id||!access) return
-    const response = await axios.post(
-      `${url}/api/v1/projects/${id}/chat`,
+    if(!id) return
+    const response = await apiClient.post(
+      `/api/v1/projects/${id}/chat`,
       {
         prompt: message
-      },
-      {
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${access}`
-        },
       }
     );
 

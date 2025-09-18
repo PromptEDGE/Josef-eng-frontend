@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 
 const useSendMessage = () => {
     const { mutate, isPending, isError, isSuccess, data } = useMutation({
-        mutationFn: async ({id, access, message}:{id:string, access:string, message:string}) => sendMessageToProject({id, access, message}),
+        mutationFn: async ({id, message}:{id:string, message:string}) => sendMessageToProject({id, message}),
     })
     return {
         sendMessage: mutate,

@@ -1,7 +1,5 @@
-import { CreateProjectType, LibraryItem } from "@/utils/types";
-import axios from "axios";
-
-const url = import.meta.env.VITE_BACKEND_URL
+import { CreateProjectType } from "@/utils/types";
+import apiClient from "@/api/client";
 export const createProject = async ({
   name,
   client,
@@ -13,12 +11,10 @@ export const createProject = async ({
   location,
   description,
   systems,
-  access_token
 }:CreateProjectType) => {
   try {
-    if(!access_token) return
-    const response = await axios.post(
-      `${url}/api/v1/projects`,
+    const response = await apiClient.post(
+      `/api/v1/projects`,
       {
         name,
         client,
@@ -30,13 +26,6 @@ export const createProject = async ({
         location,
         description,
         systems
-      },
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          "Authorization": `Bearer ${access_token}`
-        }
       }
     );
 
@@ -48,18 +37,10 @@ export const createProject = async ({
 };
 
 
-export const getProjects = async (id:string) => {
+export const getProjects = async () => {
   try {
-    if(!id) return
-    const access_token = id
-    const response = await axios.get(
-      "https://backend-service-production-c674.up.railway.app/api/v1/projects",
-      {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${access_token}`
-        },
-      }
+    const response = await apiClient.get(
+      `/api/v1/projects`
     );
 
     return response.data;
@@ -71,4 +52,3 @@ export const getProjects = async (id:string) => {
     throw error;
   }
 };
-

@@ -145,7 +145,7 @@ export function AIAssistant() {
 
       // send to ai
       await uploadFile(
-        {type: file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',file,projId:project.id,access_token:user?.access_token},
+        {type: file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',file,projId:project.id},
         {
           onSuccess: (data)=>{
             const res:ResponseData = data
@@ -198,7 +198,7 @@ export function AIAssistant() {
       await dispatch(addActivity(activity))
     }
     // send prompt to ai and get response back
-    await sendMessage({id:project.id,access:user?.access_token,message:inputValue},{
+    await sendMessage({id:project.id,message:inputValue},{
       onSuccess: (data)=>{
         const res:ResponseData = data
         const assistantMessage: Message = {
