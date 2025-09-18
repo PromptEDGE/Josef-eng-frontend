@@ -8,3 +8,7 @@ export const getFileReaderUrl = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
   });
 };
+
+export const getFileReaderUrls = (files: File[]): Promise<string[]> => {
+  return Promise.all(files.map((file) => getFileReaderUrl(file)));
+};

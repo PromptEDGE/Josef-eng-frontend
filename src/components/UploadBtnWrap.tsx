@@ -1,6 +1,6 @@
 import { AudioLines, Files, Image, Video } from "lucide-react";
 import {  type ReactNode, } from "react";
-import { AnimatePresence,motion } from "framer-motion"
+import { AnimatePresence,motion } from "framer-motion";
 import UploadFileBtn from "./UploadFileBtn";
 // import UploadBtn from "./UploadBtn";
 interface Prop{
@@ -9,20 +9,21 @@ interface Prop{
 }
 const UploadBtnWrap = ({show,changeFile}:Prop) => {
     type Upload={
-        change: (e?: React.ChangeEvent<HTMLInputElement>)=>void
+        changeFile: (e?: React.ChangeEvent<HTMLInputElement>)=>void
         accept: string
         children: ReactNode
         id:string
+        text:string
     }
     const sendUpload: Upload[]= [
-        {change: changeFile,accept:"audio/*",children: <AudioLines />,id: "audio"},
-        {change: changeFile,accept:"image/*",children: <Image/>,id: "image"},
-        {change: changeFile,accept:"video/*",children: <Video/>,id: "video"},
-        {change: changeFile,accept:".json, .xml, .yaml, .yml, .log, .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .csv, .txt, .rtf,.dwg, .dxf, .step, .stp, .igs, .iges, .sldprt, .sldasm, .ipt, .iam, .obj, .3ds, .skp, .fbx ",children: <Files/>,id: "file"},
+        {text:"audio",changeFile: changeFile,accept:"audio/*",children: <AudioLines />,id: "audio"},
+        {text:"image",changeFile: changeFile,accept:"image/*",children: <Image/>,id: "image"},
+        {text:"video",changeFile: changeFile,accept:"video/*",children: <Video/>,id: "video"},
+        {text:"document",changeFile: changeFile,accept:".json, .xml, .yaml, .yml, .log, .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .csv, .txt, .rtf,.dwg, .dxf, .step, .stp, .igs, .iges, .sldprt, .sldasm, .ipt, .iam, .obj, .3ds, .skp, .fbx ",children: <Files/>,id: "file"},
     ]
 
     return ( 
-        <div className="absolute top-[-180px] z-20 w-fit duration-500 transition-all transform  flex flex-col gap-3 items-center justify-center ">
+        <div className=" z-20 w-fit duration-500 transition-all transform  flex flex-col gap-3 items-start justify-center ">
                 {sendUpload?.map((item,index)=>(
                     <AnimatePresence key={item.id}>
                         {show&&
@@ -38,9 +39,7 @@ const UploadBtnWrap = ({show,changeFile}:Prop) => {
                             }}
                             >
                                     <UploadFileBtn
-                                    changeFile={item.change}
-                                    accept={item.accept}
-                                    children={item.children}
+                                    {...item}
                                     id={item.id}
                                     />
                             </motion.div>

@@ -209,7 +209,7 @@ export function FileUpload() {
         </div>
       </div>
       {/* Project Dropdown (shadcn/ui Select) */}
-      {projects && projects.length > 0 && (
+      {/* {projects && projects.length > 0 && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-foreground mb-1">Select Project</label>
           <Select
@@ -231,7 +231,7 @@ export function FileUpload() {
             </SelectContent>
           </Select>
         </div>
-      )}
+      )} */}
 
 
 

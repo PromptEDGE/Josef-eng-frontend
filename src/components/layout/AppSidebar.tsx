@@ -83,10 +83,10 @@ export function AppSidebar() {
 
 
   return (
-    <Sidebar className={collapsed ? 'w-14' : 'w-64'} collapsible="icon">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow">
+    <Sidebar className={collapsed ? 'w-14  ' : 'w-64'} collapsible="icon">
+      <SidebarHeader className={` ${collapsed?"p-1":"p-4"} `}>
+        <div className="flex items-center justify-center w-full gap-3">
+          <div className={`  w-8 h-8 rounded-lg bg-gradient-primary  flex items-center justify-center shadow-glow`}>
             <Brain className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
@@ -142,7 +142,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Library - Show when on library routes */}
-        {!collapsed && location.pathname.startsWith('/library') && (
+        {/* {!collapsed && location.pathname.startsWith('/library') && (
           <SidebarGroup>
             <SidebarGroupLabel>Library Content</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -167,10 +167,10 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
+        )} */}
 
         {/* Tools */}
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -193,7 +193,7 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup> */}
         <SidebarGroup>
           <SidebarGroupLabel>Projects History</SidebarGroupLabel>
           <SidebarMenu>
@@ -201,7 +201,8 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild className={getNavClassName(`/project/${item.id}`)}>
                     <NavLink to={`/project/${item.id}`} className="capitalize flex items-center justify-between">
-                      {item.name}
+                      {!collapsed && item.name}
+                      {collapsed && <span>{item.name.split(' ')[0]}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

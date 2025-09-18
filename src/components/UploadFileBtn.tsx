@@ -4,8 +4,9 @@ interface Prop {
     accept:string,
     id:string
     changeFile: (e?: React.ChangeEvent<HTMLInputElement>)=>void
+    text:string
 }
-const UploadFileBtn = ({children,accept,id,changeFile}:Prop) => {
+const UploadFileBtn = ({children,accept,id,text,changeFile}:Prop) => {
     const [inputKey, setInputKey] = useState<number>(Date.now());
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -16,10 +17,11 @@ const UploadFileBtn = ({children,accept,id,changeFile}:Prop) => {
   };
     return (
         <>
-            <div className="bg-white shadow hover:shadow-2xl text-[#333] border-[2px] border-white duration-500 transition-all transform group hover:scale-105 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center cursor-pointer ">
+            <div className="bg-white/50 text-black duration-500 transition-all transform group hover:scale-105 p-2 rounded-full flex items-center justify-start cursor-pointer ">
                 <input key={inputKey} onChange={handleChange} hidden id={id} type="file" accept={accept} className="" />
-                <label htmlFor={id} className="cursor-pointer" >
+                <label htmlFor={id} className="cursor-pointer flex gap-1 items-center justify-start capitalize " >
                     {children}
+                    <p className="text-sm">{text}</p>
                 </label>
             </div>
         </>

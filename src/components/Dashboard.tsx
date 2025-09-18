@@ -15,10 +15,11 @@ import {
   Database,
   Activity,
   Zap,
-  Target
+  Target,
+  LucideProps,
 } from 'lucide-react';
 import heroImage from '@/assets/engineering-hero.jpg';
-import { useEffect, useState } from 'react';
+import { ForwardRefExoticComponent, ReactNode, RefAttributes, useEffect, useState } from 'react';
 import { ActivityItem } from '@/utils/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
@@ -27,40 +28,7 @@ interface DashboardProps {
   onViewChange: (view: string) => void;
 }
 
-const stats = [
-  {
-    id: 'documents',
-    label: 'Documents Processed',
-    value: '247',
-    change: '+12',
-    icon: FileText,
-    color: 'text-primary'
-  },
-  {
-    id: 'projects',
-    label: 'Active Projects',
-    value: '8',
-    change: '+2',
-    icon: Target,
-    color: 'text-accent'
-  },
-  // {
-  //   id: 'calculations',
-  //   label: 'Calculations Done',
-  //   value: '156',
-  //   change: '+24',
-  //   icon: Calculator,
-  //   color: 'text-success'
-  // },
-  // {
-  //   id: 'efficiency',
-  //   label: 'Time Saved (Hours)',
-  //   value: '342',
-  //   change: '+67',
-  //   icon: Clock,
-  //   color: 'text-warning'
-  // }
-];
+
 
 // const recentActivity = [
 //   {
@@ -122,14 +90,14 @@ const quickActions = [
   //   color: 'bg-success',
   //   action: 'ai-assistant'
   // },
-  {
-    id: 'generate',
-    title: 'Generate Proposal',
-    description: 'Create proposals with pricing and layouts',
-    icon: Users,
-    color: 'bg-warning',
-    action: 'proposals'
-  }
+  // {
+  //   id: 'generate',
+  //   title: 'Generate Proposal',
+  //   description: 'Create proposals with pricing and layouts',
+  //   icon: Users,
+  //   color: 'bg-warning',
+  //   action: 'proposals'
+  // }
 ];
 
 const systemHealth = [
@@ -141,7 +109,50 @@ const systemHealth = [
 
 export function Dashboard({ onViewChange }: DashboardProps) {
   const activites = useSelector((state:RootState)=>state.activites.activities)
+  const projects = useSelector((state:RootState)=>state.project.project)
   const [recentActivity,setRecentActivity] = useState<ActivityItem[]>([])
+  type Stats={
+    id:string,
+    label:string,
+    value:number;
+    icon:  ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+    color: string,
+    change?: number,
+  }
+  const stats:Stats[] = [
+  {
+    id: 'documents',
+    label: 'Documents Processed',
+    value: 247,
+    change: 12,
+    icon: FileText,
+    color: 'text-primary'
+  },
+  {
+    id: 'projects',
+    label: 'Active Projects',
+    value: projects?.length??0,
+    // change: '+2',
+    icon: Target,
+    color: 'text-accent'
+  },
+  // {
+  //   id: 'calculations',
+  //   label: 'Calculations Done',
+  //   value: '156',
+  //   change: '+24',
+  //   icon: Calculator,
+  //   color: 'text-success'
+  // },
+  // {
+  //   id: 'efficiency',
+  //   label: 'Time Saved (Hours)',
+  //   value: '342',
+  //   change: '+67',
+  //   icon: Clock,
+  //   color: 'text-warning'
+  // }
+];
   useEffect(()=>{
     setRecentActivity(activites)
   },[activites])
@@ -192,9 +203,9 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-2xl font-bold text-foreground">{stat.value}</span>
-                  <Badge variant="secondary" className="text-xs">
+                  {stat.change&&<Badge variant="secondary" className="text-xs">
                     {stat.change}
-                  </Badge>
+                  </Badge>}
                 </div>
               </div>
               <div className={`w-12 h-12 rounded-lg bg-gradient-card flex items-center justify-center ${stat.color}`}>

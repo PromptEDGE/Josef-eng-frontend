@@ -102,7 +102,7 @@ export function AIAssistant() {
   const user = useSelector((state:RootState)=>state.localStorage.user)
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [file, setFile] = useState<File|undefined>(undefined);
+  const [files, setFiles] = useState<File|undefined>(undefined);
   const [preview,setPreview] = useState<string>("")
   const [isListening, setIsListening] = useState<boolean>(false);
   const [showUpload, setShowUpload] = useState<boolean>(false);
@@ -113,6 +113,8 @@ export function AIAssistant() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+
   const findProject = useCallback(()=>{
     const project = projects.find(item=>item.id.toLowerCase()===uid)
     if(project){
@@ -121,82 +123,12 @@ export function AIAssistant() {
   },[uid,projects])
 
 
-    const readableSize = (size: number) => {
-      const units = ['B', 'KB', 'MB', 'GB'];
-      let i = 0;
-      while (size >= 1024 && i < units.length - 1) {
-        size /= 1024;
-        i++;
-      }
-      return `${size.toFixed(1)} ${units[i]}`;
-    };
-    const getType = (mime: string): 'video' | 'audio' | 'document' => {
-      if (mime.startsWith('video')) return 'video';
-      if (mime.startsWith('audio')) return 'audio';
-      return 'document';
-    };
+
+
 
   const handleSendMessage = async () => {
     let localUrl: string;
-    // if there is file send also and turn to string
-
-
-    if (file) {
-
-      // send to ai
-      await uploadFile(
-        {type: file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',file,projId:project.id,access_token:user?.access_token},
-        {
-          onSuccess: (data)=>{
-            const res:ResponseData = data
-          },
-          onError: (error)=>{
-            console.log(error)
-          }
-        }
-      )
-      
-        const filedata = new FormData();
-        filedata.append('file', file);
-
-        const formFile = filedata.get('file') as File;
-        localUrl = await getFileReaderUrl(formFile);
-        const library: LibraryItem = {
-          id: uuidv4(),
-          name: file.name,
-          type: getType(file.type),
-          size: readableSize(file.size),
-          // uploadedBy: 'current-user-id', // Replace with actual user ID
-          uploadedAt: new Date(),
-          tags: [],
-          thumbnail: localUrl, // Optional: assign local preview to thumbnail
-        };
-
-        // If it's a video or audio file, get the duration
-        if (file.type.startsWith('video') || file.type.startsWith('audio')) {
-          const media = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
-          media.preload = 'metadata';
-          media.onloadedmetadata = () => {
-            const duration = media.duration;
-            const minutes = Math.floor(duration / 60);
-            const seconds = Math.floor(duration % 60);
-            library.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          };
-          media.src = localUrl;
-        } else {
-          console.log('LibraryItem:', library);
-        }
-
-      await dispatch(getFile(library))
-      const activity:ActivityItem = {
-        icon: FileText,
-        id: uuidv4(),
-        type: "document",
-        title: "You uploaded a document to your library.",
-        time: new Date().toISOString(),
-      }
-      await dispatch(addActivity(activity))
-    }
+    setPreview("")
     // send prompt to ai and get response back
     await sendMessage({id:project.id,access:user?.access_token,message:inputValue},{
       onSuccess: (data)=>{
@@ -218,6 +150,7 @@ export function AIAssistant() {
         console.log(error)
       }
     })
+
     // update ui message
     const userMessage: Message = {
       id: uuidv4(),
@@ -231,8 +164,6 @@ export function AIAssistant() {
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
-    setFile(undefined);
-    setPreview("");
       
   };
 
@@ -245,84 +176,6 @@ export function AIAssistant() {
     return 'general';
   };
 
-  const generateAIResponse = (input: string): string => {
-    const lower = input.toLowerCase();
-    
-    if (lower.includes('cooling load') || lower.includes('calculate')) {
-      return `Based on your request for cooling load calculation, I'll help you determine the requirements for a 5000 sq ft office space:
-
-**Heat Load Components:**
-• Sensible heat gain from occupants: ~45,000 BTU/hr (150 people × 300 BTU/hr)
-• Lighting load: ~25,000 BTU/hr (2.5 W/sq ft × 3.41 BTU/W)
-• Equipment load: ~30,000 BTU/hr (estimated)
-• Solar/envelope gains: ~20,000 BTU/hr (varies by orientation)
-
-**Total Cooling Load:** ~120,000 BTU/hr (10 tons)
-
-**Recommendations:**
-• Consider variable air volume (VAV) system for efficiency
-• Use ASHRAE 62.1 for ventilation requirements (15 cfm/person minimum)
-• Include 10-15% safety factor for design conditions
-
-Would you like me to provide detailed calculations for any specific component?`;
-    }
-    
-    if (lower.includes('ashrae') || lower.includes('standard')) {
-      return `Here are the key ASHRAE 90.1-2019 requirements for HVAC efficiency:
-
-**Equipment Efficiency Requirements:**
-• Air-cooled chillers >150 tons: minimum 9.562 EER, 14.04 IPLV
-• Water-cooled chillers >300 tons: minimum 5.50 COP, 6.84 IPLV
-• Packaged AC units: varies by capacity (13-14.4 EER typical)
-
-**System Requirements:**
-• Economizer controls required for units >54,000 BTU/hr in most climates
-• Variable speed drives required for fans >7.5 HP
-• Energy recovery required for systems >5,000 cfm with >70% outside air
-
-**Building Envelope:**
-• Updated insulation requirements
-• Window performance standards (U-factor and SHGC)
-
-Need specific details for your project's equipment or climate zone?`;
-    }
-
-    if (lower.includes('data center')) {
-      return `For data center cooling design, here are my recommendations:
-
-**Cooling Strategy:**
-• Precision air conditioning units with close-coupled cooling
-• Hot aisle/cold aisle containment to improve efficiency
-• Target supply temperature: 64-72°F, return temp: 80-85°F
-
-**Redundancy Requirements:**
-• N+1 minimum for critical loads
-• Consider 2N for high-availability requirements
-• Independent cooling zones for different IT equipment
-
-**Efficiency Measures:**
-• Variable speed fans and pumps
-• Economizer operation when ambient conditions allow
-• Consider liquid cooling for high-density racks (>15kW per rack)
-
-**Monitoring:**
-• Temperature and humidity sensors throughout space
-• Power usage effectiveness (PUE) monitoring
-• Integration with building management system
-
-Would you like specific equipment recommendations or load calculations?`;
-    }
-
-    return `I understand you're asking about "${input}". As your AI engineering assistant, I have access to extensive HVAC knowledge including:
-
-• Technical standards (ASHRAE, SMACNA, NFPA)
-• Equipment specifications and performance data
-• Design best practices and methodologies
-• Energy efficiency strategies
-• Code compliance requirements
-
-Could you provide more specific details about your project requirements? This will help me give you more targeted recommendations and calculations.`;
-  };
 
   const toggleListening = () => {
     setIsListening(!isListening);
@@ -346,60 +199,54 @@ Could you provide more specific details about your project requirements? This wi
       description: "Message content copied successfully",
     });
   };
+
+
   const changeFile = async (e: ChangeEvent<HTMLInputElement>)=>{
-    const selectedFile = e.target.files ? e.target.files[0] : null;
+  const selectedFile = e.target.files[0]
+
     if (selectedFile) {
-      setFile(selectedFile)
+      await setFiles(selectedFile)
+      setShowUpload(false)
+
       const url = await getFileReaderUrl(selectedFile)
       setPreview(url)
+      const fileType = files.type.startsWith('video')  ? 'VIDEO'
+         : files.type.startsWith('image') ? 'IMAGE' 
+         : files.type.startsWith('audio') ? 'AUDIO' 
+         : 'DOCUMENT';
+
+        await uploadFile(
+          {type: fileType,file:files,projId:project.id,access_token:user?.access_token},
+          {
+            onSuccess: async (data)=>{
+              const res:ResponseData = data
+              console.log(res)
+            },
+            onError: (error)=>{
+              console.log(error)
+              setPreview("")
+              toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+              })
+            }
+          }
+        )
+        
     }
   }
-  const createProposal = async (conversation: string)=> {
-    const { 
-        id:project_uid,
-        name: projectName,
-        type:projectType,
-        priority,
-        startDate,
-        endDate,
-        budget,
-        description,
-        systems,
-        location,
-        client
-    } = project
-    const create: Proposal ={
-      id: uuidv4(),
-      client,
-      project_uid,
-      projectName,
-      projectType,
-      priority,
-      startDate,
-      endDate,
-      budget,
-      location,
-      description,
-      systems,
-      createdAt: new Date().toISOString(),
-      conversation,
-    } 
-    await dispatch(createNewProposal(create))
-    const activity:ActivityItem = {
-      icon: FileText,
-      id: uuidv4(),
-      type: "document",
-      title: "You have created a proposal.",
-      time: new Date().toISOString(),
-    }
-    await dispatch(addActivity(activity))
-  }
+
+
+
   useEffect(() => {
     findProject()
     scrollToBottom();
   }, [messages,findProject]);
+
+
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="relative p-6 h-full flex flex-col">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-2">Engineering Assistant</h1>
         <p className="text-muted-foreground">
@@ -451,13 +298,13 @@ Could you provide more specific details about your project requirements? This wi
                     }`}
                   >
                     
-                    {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />}
+                    {/* {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />} */}
                     {message.content.text&&<div className="whitespace-pre-wrap text-sm">{message.content.text}</div>}
                     
                     
                     {message.type === 'assistant' && (
                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
-                          <div className="flex items-center gap-2">
+                          {/* <div className="flex items-center gap-2">
                             {message.category && (
                               <Badge variant="secondary" className="text-xs">
                                 {message.category}
@@ -468,7 +315,7 @@ Could you provide more specific details about your project requirements? This wi
                                 {Math.round(message.confidence * 100)}% confidence
                               </span>
                             )}
-                          </div>
+                          </div> */}
                           <div className="flex justify-start items-center gap-2">
                             <Button
                               variant="ghost"
@@ -484,9 +331,9 @@ Could you provide more specific details about your project requirements? This wi
                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                               <ThumbsDown className="w-3 h-3" />
                             </Button>
-                            <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="" >
+                            {/* <Button onClick={()=>createProposal(message.content.text)} variant="ghost"size='sm' className="" >
                               create proposal
-                            </Button>
+                            </Button> */}
                           </div>
                         </div>
                     )}
@@ -531,49 +378,51 @@ Could you provide more specific details about your project requirements? This wi
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="p-4 relative space-y-3 border-t border-border">
+        {showUpload&&<div className="w-[300px] z-50 backdrop-blur p-3 absolute rounded-lg shadow bottom-[180px] ">
           <UploadBtnWrap show={showUpload} changeFile={changeFile} />
-          {preview&&<div className="w-[300px] h-[200px] flex flex-col items-center justify-center ">
-            <MessageFile message={preview} />
-          </div>}
-          <div className="flex gap-2">
-            <Button 
-            onClick={()=>setShowUpload(prev=>!prev)}
-            variant="outline" size="sm" className="px-2">
-              <Paperclip className="w-4 h-4" />
-            </Button>
-            <div className="flex-1 relative">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask about calculations, standards, design recommendations..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="pr-20"
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={toggleListening}
-                >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={handleSendMessage}
-                  disabled={(!inputValue.trim() && !file) || MsgLoading}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+        </div>}
+        <div className="p-4 relative flex flex-col gap-6 border-t border-border">
+            {preview&&<div className="w-full h-full flex items-start justify-start gap-1 ">
+                <MessageFile  message={preview} uploading={FileLoading} />
+            </div>}
+            <div className="flex gap-2">
+              <Button 
+              onClick={()=>setShowUpload(prev=>!prev)}
+              variant="outline" size="sm" className="px-2">
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <div className="flex-1 relative">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Ask about calculations, standards, design recommendations..."
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  className="pr-20"
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={toggleListening}
+                  >
+                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={handleSendMessage}
+                    disabled={(!inputValue.trim()) || MsgLoading}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Ask about HVAC calculations, equipment sizing, energy codes, troubleshooting, or design recommendations
-          </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Ask about HVAC calculations, equipment sizing, energy codes, troubleshooting, or design recommendations
+            </p>
         </div>
       </Card>
     </div>
