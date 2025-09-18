@@ -13,12 +13,25 @@ const librarySlice = createSlice({
     initialState,
     reducers:{
         getFile: (state,action:PayloadAction<LibraryItem>)=>{
-            const update = [...state.library,action.payload]
-            state.library = update
+            const existingIndex = state.library.findIndex((item) => item.id === action.payload.id);
+            if (existingIndex >= 0) {
+                state.library[existingIndex] = action.payload;
+            } else {
+                state.library.push(action.payload);
+            }
         },
         loadLibrary: (state)=>{
             const stored=localStorage.getItem("library")
-            state.library = stored ? JSON.parse(stored) : [];
+            if (!stored) return;
+            try {
+                const parsed: LibraryItem[] = JSON.parse(stored).map((item: LibraryItem) => ({
+                    ...item,
+                    uploadedAt: item.uploadedAt ? new Date(item.uploadedAt) : new Date(),
+                }));
+                state.library = parsed;
+            } catch (error) {
+                console.error('Failed to load library from storage', error);
+            }
 
         },
         getAllLibrary: (state,action:PayloadAction<LibraryItem[]>)=>{

@@ -6,21 +6,24 @@ export type UploadProgress = {
   progress: number;
 };
 
-export interface UploadProjectFileOptions {
+export type MessageType = "DOCUMENT" | "IMAGE" | "VIDEO" | "AUDIO";
+
+export interface UploadFileRequestOptions {
   signal?: AbortSignal;
   onProgress?: (progress: UploadProgress) => void;
   metadata?: Record<string, string | Blob>;
 }
 
-export const uploadProjectFile = async (
-  projId: string,
+const createFormData = (
   file: File,
-  { signal, onProgress, metadata }: UploadProjectFileOptions = {}
+  messageType: MessageType,
+  metadata?: Record<string, string | Blob>
 ) => {
   const formData = new FormData();
   formData.append("files", file);
   formData.append("file_name", file.name);
   formData.append("mime_type", file.type);
+  formData.append("message_type", messageType);
 
   if (metadata) {
     Object.entries(metadata).forEach(([key, value]) => {
@@ -28,9 +31,18 @@ export const uploadProjectFile = async (
     });
   }
 
+  return formData;
+};
+
+const postMultipart = async (
+  url: string,
+  file: File,
+  messageType: MessageType,
+  { signal, onProgress, metadata }: UploadFileRequestOptions = {}
+) => {
   const response = await apiClient.post(
-    `/api/v1/projects/${projId}/uploads`,
-    formData,
+    url,
+    createFormData(file, messageType, metadata),
     {
       headers: { "Content-Type": "multipart/form-data" },
       signal,
@@ -43,5 +55,36 @@ export const uploadProjectFile = async (
     }
   );
 
+  return response.data;
+};
+
+export const uploadProjectFile = (
+  projId: string,
+  file: File,
+  messageType: MessageType,
+  options?: UploadFileRequestOptions
+) => postMultipart(`/api/v1/projects/${projId}/uploads`, file, messageType, options);
+
+export const uploadGeneralFile = (
+  file: File,
+  messageType: MessageType,
+  options?: UploadFileRequestOptions
+) => postMultipart(`/api/v1/uploads`, file, messageType, options);
+
+export interface DocumentRecord {
+  id: string;
+  project_id?: string | null;
+  user_id?: string | null;
+  filename: string;
+  content_type: string;
+  storage_path?: string | null;
+  status?: string;
+  created_at: string;
+  updated_at?: string;
+  size_bytes?: number;
+}
+
+export const listDocuments = async (): Promise<DocumentRecord[]> => {
+  const response = await apiClient.get<DocumentRecord[]>(`/api/v1/documents`);
   return response.data;
 };

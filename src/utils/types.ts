@@ -53,6 +53,12 @@ export interface LibraryItem {
   tags: string[];
   description?: string;
   thumbnail?: string;
+  projectId?: string | null;
+  userId?: string | null;
+  status?: string;
+  storagePath?: string | null;
+  contentType?: string;
+  downloadUrl?: string;
 }
 export interface Proposal {
   id: string; 

@@ -1,47 +1,37 @@
-import { useState, useCallback } from 'react';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Upload, 
-  FileText, 
-  File, 
-  X, 
-  CheckCircle, 
+import {
+  Upload,
+  FileText,
+  File,
+  X,
+  CheckCircle2,
   AlertCircle,
   Loader2,
   Image,
   Video,
   Music,
-  Loader2Icon
+  Clock3,
+  XCircle,
+  Trash2,
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/redux/store';
-import useUploadDocument from '@/hooks/useUploadFiles';
-import { ProjectData } from '@/utils/types';
+import type { LucideIcon } from 'lucide-react';
+import useUploadFiles, { UploadStatus, UploadTask } from '@/hooks/useUploadFiles';
+import { v4 as uuidv4 } from 'uuid';
 
-interface UploadedFile {
+interface SelectedFileInfo {
   id: string;
-  name: string;
-  size: number;
-  type: string;
-  status: 'uploading' | 'processing' | 'completed' | 'error';
-  progress: number;
-  category?: 'pdf' | 'excel' | 'word' | 'cad' | 'image' | 'video' | 'audio' | 'other';
-  extractedData?: string;
+  file: File;
 }
 
-const getFileCategory = (type: string): UploadedFile['category'] => {
+type FileCategory = 'pdf' | 'excel' | 'word' | 'cad' | 'image' | 'video' | 'audio' | 'other';
+
+const getFileCategory = (type: string): FileCategory => {
   if (type.includes('pdf')) return 'pdf';
   if (type.includes('sheet') || type.includes('excel')) return 'excel';
   if (type.includes('word') || type.includes('document')) return 'word';
@@ -52,7 +42,7 @@ const getFileCategory = (type: string): UploadedFile['category'] => {
   return 'other';
 };
 
-const getFileIcon = (category: UploadedFile['category']) => {
+const getFileIcon = (category: FileCategory) => {
   switch (category) {
     case 'pdf':
     case 'word':
@@ -81,160 +71,161 @@ const acceptedFileTypes = {
   'image/*': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff'],
   'video/*': ['.mp4', '.avi', '.mov', '.wmv'],
   'audio/*': ['.mp3', '.wav', '.m4a'],
-  'application/octet-stream': ['.dwg', '.dxf']
+  'application/octet-stream': ['.dwg', '.dxf'],
+};
+
+const statusConfig: Record<UploadStatus, { label: string; badgeVariant: 'secondary' | 'outline' | 'destructive'; icon: LucideIcon }> = {
+  queued: { label: 'Queued', badgeVariant: 'outline', icon: Clock3 },
+  uploading: { label: 'Uploading', badgeVariant: 'outline', icon: Loader2 },
+  success: { label: 'Uploaded', badgeVariant: 'secondary', icon: CheckCircle2 },
+  error: { label: 'Failed', badgeVariant: 'destructive', icon: AlertCircle },
+  canceled: { label: 'Canceled', badgeVariant: 'outline', icon: XCircle },
+};
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 export function FileUpload() {
-  const { uploadFile, isPending } = useUploadDocument()
-  const projects = useSelector((state:RootState)=>state.project.project)
-  const user = useSelector((state:RootState)=>state.localStorage.user)
-  const [selectedProject, setSelectedProject] = useState<ProjectData|null>(null);
-  const [file, setFile] = useState<File|null>(null);
+  const { uploads, uploadFiles, cancelUpload, removeUpload, resetUploads, isUploading } = useUploadFiles();
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFileInfo[]>([]);
   const { toast } = useToast();
+  const completedIdsRef = useRef(new Set<string>());
 
-  const upload = async()=>{
-    if (!file) {
-      toast({
-        title: "Error",
-        description: "Please select a file to upload.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if(!selectedProject){
-      toast({
-        title: "Error",
-        description: "Please select a project to upload the file to.",
-        variant: "destructive",
-      });
-      return;
-    }
-    await uploadFile({
-      projId:selectedProject.id,
-      type:file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',
-      file:file},{
-        onSuccess:()=>{
-          toast({
-            title: "File uploaded",
-            description: `${file.name} has been uploaded`,
-          });
-          setFile(null);
-        },
-        onError:(error)=>{
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-          setFile(null);
-        }
-      })
-  }
-  
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      // Only accept the first file, replace any previous file
-      setFile(acceptedFiles[0]);
-      toast({
-        title: "File uploaded",
-        description: `${acceptedFiles[0].name} is ready for preview and upload`,
-      });
-    }
-  }, [toast]);
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (!acceptedFiles?.length) {
+        return;
+      }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+      setSelectedFiles((prev) => {
+        const newFiles = acceptedFiles.map((file) => ({ id: uuidv4(), file }));
+        return [...prev, ...newFiles];
+      });
+
+      toast({
+        title: `${acceptedFiles.length} file${acceptedFiles.length > 1 ? 's' : ''} added`,
+        description: 'Review the files below before uploading.',
+      });
+    },
+    [toast]
+  );
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: acceptedFileTypes,
-    maxSize: 100 * 1024 * 1024, // 100MB
+    maxSize: 100 * 1024 * 1024,
+    multiple: true,
+    noClick: true,
   });
 
-  const generateMockExtractedData = (category: UploadedFile['category']): string => {
-    switch (category) {
-      case 'pdf':
-        return 'Extracted: ASHRAE 90.1 Standard, Energy efficiency requirements, Minimum equipment performance standards';
-      case 'excel':
-        return 'Processed: Load calculations, Equipment specifications, Cost analysis data';
-      case 'word':
-        return 'Analyzed: Technical specifications, Project requirements, Design criteria';
-      case 'cad':
-        return 'Parsed: HVAC layout, Equipment locations, Ductwork routing, Dimensions';
-      default:
-        return 'File processed and indexed in knowledge base';
+  const handleRemovePendingFile = useCallback((id: string) => {
+    setSelectedFiles((prev) => prev.filter((file) => file.id !== id));
+  }, []);
+
+  const handleUpload = useCallback(async () => {
+    if (!selectedFiles.length) {
+      toast({
+        title: 'No files selected',
+        description: 'Add one or more files to upload.',
+        variant: 'destructive',
+      });
+      return;
     }
-  };
 
-  const removeFile = (file: null|File) => {
-    setFile(file);
-  };
+    await uploadFiles({
+      files: selectedFiles.map((item) => item.file),
+    });
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+    setSelectedFiles([]);
+  }, [selectedFiles, toast, uploadFiles]);
+
+  useEffect(() => {
+    uploads.forEach((task) => {
+      if (!['success', 'error', 'canceled'].includes(task.status)) return;
+      if (completedIdsRef.current.has(task.id)) return;
+
+      completedIdsRef.current.add(task.id);
+
+      if (task.status === 'success') {
+        toast({
+          title: 'Upload complete',
+          description: `${task.file.name} uploaded successfully.`,
+        });
+      } else if (task.status === 'error') {
+        toast({
+          title: 'Upload failed',
+          description: task.error || `${task.file.name} failed to upload.`,
+          variant: 'destructive',
+        });
+      } else if (task.status === 'canceled') {
+        toast({
+          title: 'Upload canceled',
+          description: `${task.file.name} was canceled.`,
+        });
+      }
+    });
+  }, [uploads, toast]);
+
+  const pendingCount = selectedFiles.length;
+  const activeUploads = useMemo(
+    () => uploads.filter((task) => task.status === 'uploading' || task.status === 'queued'),
+    [uploads]
+  );
+
+  const completedUploads = useMemo(
+    () => uploads.filter((task) => task.status === 'success'),
+    [uploads]
+  );
+
+  const failedUploads = useMemo(
+    () => uploads.filter((task) => task.status === 'error' || task.status === 'canceled'),
+    [uploads]
+  );
 
   return (
     <div className="p-6 space-y-6">
-      <div className="w-full flex items-center justify-between flex-wrap sm:flex-nowrap ">
+      <div className="w-full flex items-center justify-between flex-wrap sm:flex-nowrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Document Upload & Processing</h1>
           <p className="text-muted-foreground">
             Upload technical documents, drawings, specifications, and media files for AI analysis
           </p>
         </div>
-        {/* Upload Button (shadcn/ui) */}
-        <div className="flex justify-center mb-6">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={resetUploads}
+            disabled={!uploads.length}
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear history
+          </Button>
           <Button
             variant="default"
             size="lg"
             className="gap-2 px-6 py-3 text-base font-semibold shadow-md"
-            onClick={upload}
-            disabled={isPending}
+            onClick={handleUpload}
+            disabled={isUploading || !selectedFiles.length}
           >
-            {isPending?(
+            {isUploading ? (
               <>
-                <Loader2Icon className='w-5 h-5 animate-spin' /> Uploading...
+                <Loader2 className="w-5 h-5 animate-spin" /> Streaming uploads...
               </>
-              )
-              :
-              (
-                <>
-                  <Upload className="w-5 h-5" /> Upload
-                </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5" /> Upload {pendingCount ? `(${pendingCount})` : ''}
+              </>
             )}
           </Button>
         </div>
       </div>
-      {/* Project Dropdown (shadcn/ui Select) */}
-      {projects && projects.length > 0 && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-foreground mb-1">Select Project</label>
-          <Select
-            value={selectedProject ? selectedProject.id : ""}
-            onValueChange={id => {
-              const proj = projects.find((p: ProjectData) => p.id === id) || null;
-              setSelectedProject(proj);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a project" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project: ProjectData) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name || `Project ${project.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
 
-
-
-      {/* Upload Zone */}
       <Card className="border-2 border-dashed border-border hover:border-primary transition-smooth">
         <div
           {...getRootProps()}
@@ -254,62 +245,151 @@ export function FileUpload() {
               <p className="text-muted-foreground mt-1">
                 or click to browse files (PDF, Excel, Word, CAD, Images, Videos, Audio)
               </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Maximum file size: 100MB
-              </p>
+              <p className="text-sm text-muted-foreground mt-2">Maximum file size: 100MB per file</p>
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={open} disabled={isUploading}>
               Browse Files
             </Button>
           </div>
         </div>
       </Card>
 
-      {/* File Preview */}
-      {file && (
-        <Card className="p-6 mb-6 flex items-center justify-center flex-col ">
-          <h3 className="text-lg font-semibold text-foreground mb-4">File Preview</h3>
-          {file.type.startsWith('image') && (
-            <img
-              src={URL.createObjectURL(file)}
-              alt={file.name}
-              className="max-w-full max-h-64 rounded shadow"
-            />
-          )}
-          {file.type.startsWith('video') && (
-            <video
-              src={URL.createObjectURL(file)}
-              controls
-              className="max-w-full max-h-64 rounded shadow"
-            />
-          )}
-          {file.type.startsWith('audio') && (
-            <audio
-              src={URL.createObjectURL(file)}
-              controls
-              className="w-full"
-            />
-          )}
-          {file.type === 'application/pdf' && (
-            <iframe
-              src={URL.createObjectURL(file)}
-              title={file.name}
-              className="w-full h-64 border rounded"
-            />
-          )}
-          {!file.type.startsWith('image') &&
-            !file.type.startsWith('video') &&
-            !file.type.startsWith('audio') &&
-            file.type !== 'application/pdf' && (
-            <div className="text-muted-foreground">
-              <p><strong>Name:</strong> {file.name}</p>
-              <p><strong>Type:</strong> {file.type}</p>
+      {selectedFiles.length > 0 && (
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Ready to upload</h3>
+              <p className="text-sm text-muted-foreground">
+                These files are staged and will start streaming once you click Upload.
+              </p>
             </div>
-          )}
+            <Badge variant="secondary">{selectedFiles.length} selected</Badge>
+          </div>
+          <div className="grid gap-3">
+            {selectedFiles.map(({ id, file }) => {
+              const category = getFileCategory(file.type);
+              const Icon = getFileIcon(category);
+              return (
+                <div
+                  key={id}
+                  className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)} · {file.type || 'Unknown type'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemovePendingFile(id)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         </Card>
       )}
 
-      {/* Supported File Types */}
+      {uploads.length > 0 && (
+        <Card className="p-6 space-y-5">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-foreground">Upload activity</h3>
+            <p className="text-sm text-muted-foreground">
+              Monitor streaming progress, cancel in-flight uploads, or clear completed entries.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {uploads.map((task) => {
+              const { label, badgeVariant, icon: StatusIcon } = statusConfig[task.status];
+              const category = getFileCategory(task.file.type);
+              const FileIcon = getFileIcon(category);
+              const canCancel = task.status === 'uploading' || task.status === 'queued';
+              const canRemove = task.status === 'success' || task.status === 'error' || task.status === 'canceled';
+
+              return (
+                <div
+                  key={task.id}
+                  className="rounded-lg border border-border bg-card px-4 py-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <FileIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{task.file.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {formatFileSize(task.file.size)} · {task.messageType.toLowerCase()} · {task.file.type || 'unknown type'}
+                      </p>
+                      </div>
+                    </div>
+                    <Badge variant={badgeVariant} className="flex items-center gap-1">
+                      <StatusIcon className={`w-3 h-3 ${task.status === 'uploading' ? 'animate-spin' : ''}`} />
+                      {label}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    <Progress value={task.progress} className="h-2" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{task.progress}% completed</span>
+                      {task.error && <span className="text-destructive">{task.error}</span>}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    {canCancel && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => cancelUpload(task.id)}
+                      >
+                        <XCircle className="w-4 h-4 mr-1" /> Cancel
+                      </Button>
+                    )}
+                    {canRemove && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeUpload(task.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="font-medium text-foreground">Active</p>
+              <p>{activeUploads.length} in progress</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="font-medium text-foreground">Completed</p>
+              <p>{completedUploads.length} finished</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="font-medium text-foreground">Needs attention</p>
+              <p>{failedUploads.length} with issues</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Supported File Types</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

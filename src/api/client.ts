@@ -13,55 +13,65 @@ export const apiClient: AxiosInstance = axios.create({
 let isRefreshing = false;
 let pendingQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
 
-function subscribeTokenRefresh(cb: (token: string) => void) {
-  pendingQueue.push({ resolve: cb, reject: () => {} });
-}
-
-function onRefreshed(token: string) {
-  pendingQueue.forEach((p) => p.resolve(token));
-  pendingQueue = [];
-}
-
-function resetQueueWithError(error: any) {
-  pendingQueue.forEach((p) => p.reject(error));
-  pendingQueue = [];
-}
-
-// Request: attach access token when present
+// Attach access token if present before every request
 apiClient.interceptors.request.use((config) => {
   const token = getAccessToken();
-  if (token && config.headers) {
+  if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Response: refresh on 401 and retry
+// Response: refresh on auth failure and retry
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+  async (error: AxiosError<any>) => {
+    const originalRequest = (error.config ?? {}) as AxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
+    const url = originalRequest.url || '';
 
-    if (status === 401 && !originalRequest._retry) {
+    // Helpful in dev: see what we got back
+    // console.debug('API error', { status, url, data: error.response?.data });
+
+    // Do NOT intercept the refresh call itself
+    const isRefreshCall = url?.includes('/api/v1/auth/refresh');
+
+    // Detect “expired” both by HTTP status and common API error shapes
+    const data = error.response?.data as any;
+    const looksExpired =
+      status === 401 ||
+      status === 403 ||
+      status === 419 ||
+      status === 498 ||
+      data?.error === 'token_expired' ||
+      data?.code === 'token_expired' ||
+      data?.message?.toString?.().toLowerCase?.().includes('expired');
+
+    if (!isRefreshCall && looksExpired && !originalRequest._retry) {
       const refresh = getRefreshToken();
       if (!refresh) {
         clearTokens();
         return Promise.reject(error);
       }
 
+      // If a refresh is already in-flight, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          subscribeTokenRefresh((token: string) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            originalRequest._retry = true;
-            resolve(apiClient(originalRequest));
+          pendingQueue.push({
+            resolve: (newToken: string) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              }
+              originalRequest._retry = true;
+              resolve(apiClient(originalRequest));
+            },
+            reject, // important: actually reject if refresh fails
           });
         });
       }
 
+      // Start a new refresh
       originalRequest._retry = true;
       isRefreshing = true;
 
@@ -71,28 +81,37 @@ apiClient.interceptors.response.use(
           { refresh_token: refresh },
           { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
         );
-        const newAccess = resp.data?.access_token as string;
-        const newRefresh = resp.data?.refresh_token || refresh;
+
+        // Adjust these keys to match your backend response
+        const newAccess: string = resp.data?.access_token || resp.data?.access || resp.data?.token;
+        const newRefresh: string = resp.data?.refresh_token || resp.data?.refresh || refresh;
         if (!newAccess) throw new Error('No access token in refresh response');
 
         setTokens({ accessToken: newAccess, refreshToken: newRefresh });
-        onRefreshed(newAccess);
 
+        // Flush success to all queued requests
+        pendingQueue.forEach((p) => p.resolve(newAccess));
+        pendingQueue = [];
+
+        // Retry the original request with new token
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         }
         return apiClient(originalRequest);
       } catch (refreshErr) {
+        // Flush failure to all queued requests
+        pendingQueue.forEach((p) => p.reject(refreshErr));
+        pendingQueue = [];
+
         clearTokens();
-        resetQueueWithError(refreshErr);
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
 
 export default apiClient;
-

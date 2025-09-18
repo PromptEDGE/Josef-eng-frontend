@@ -1,17 +1,17 @@
-import { useState, useRef, useEffect, useCallback, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, ChangeEvent, ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Send, 
-  Brain, 
-  User, 
-  FileText, 
-  Calculator, 
-  Lightbulb, 
+import {
+  Send,
+  Brain,
+  User,
+  FileText,
+  Calculator,
+  Lightbulb,
   Search,
   Mic,
   MicOff,
@@ -20,21 +20,21 @@ import {
   ThumbsUp,
   ThumbsDown,
   Paperclip,
-  Dot
+  XCircle,
+  Trash2,
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import MessageFile from './MessageFile';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { useParams } from 'react-router-dom';
-import { ActivityItem, LibraryItem, Message, ProjectData, Proposal } from '@/utils/types';
-import { getFile } from '@/lib/redux/slice/librarySlice';
-import UploadBtnWrap from './UploadBtnWrap';
-import { getFileReaderUrl } from '@/utils/fileReader';
+import { ActivityItem, Message, ProjectData, Proposal } from '@/utils/types';
 import { createNewProposal } from '@/lib/redux/slice/proposalSlice';
 import { addActivity } from '@/lib/redux/slice/activitySlice';
 import useSendMessage from '@/hooks/useSendMessage';
-import useUploadDocument from '@/hooks/useUploadFiles';
+import useUploadFiles, { UploadStatus } from '@/hooks/useUploadFiles';
+import UploadBtnWrap from './UploadBtnWrap';
+import { Progress } from '@/components/ui/progress';
 
 
 
@@ -96,19 +96,74 @@ export function AIAssistant() {
   const params = useParams()
   const uid = params.uid as string ;
   const { sendMessage, isPending:MsgLoading, isError:MsgError } = useSendMessage()
-  const { uploadFile, isPending:FileLoading, isError:FileError } = useUploadDocument()
+  const {
+    uploads: projectUploads,
+    uploadFiles: queueProjectUploads,
+    cancelUpload: cancelProjectUpload,
+    removeUpload: removeProjectUpload,
+    isUploading: isUploadingProject,
+  } = useUploadFiles()
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
-  const user = useSelector((state:RootState)=>state.localStorage.user)
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [file, setFile] = useState<File|undefined>(undefined);
-  const [preview,setPreview] = useState<string>("")
   const [isListening, setIsListening] = useState<boolean>(false);
-  const [showUpload, setShowUpload] = useState<boolean>(false);
+  const [showUploadOptions, setShowUploadOptions] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [project,setProject] = useState<ProjectData|null>(null)
   const { toast } = useToast();
+  const handledUploadIdsRef = useRef(new Set<string>());
+
+  const uploadStatusConfig: Record<UploadStatus, { label: string; variant: 'secondary' | 'outline' | 'destructive' }> = {
+    queued: { label: 'Queued', variant: 'outline' },
+    uploading: { label: 'Uploading', variant: 'outline' },
+    success: { label: 'Uploaded', variant: 'secondary' },
+    error: { label: 'Failed', variant: 'destructive' },
+    canceled: { label: 'Canceled', variant: 'outline' },
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return '0 Bytes';
+    const units = ['Bytes', 'KB', 'MB', 'GB'];
+    const index = Math.min(
+      units.length - 1,
+      Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024)))
+    );
+    const size = bytes / Math.pow(1024, index);
+    return `${size.toFixed(1)} ${units[index]}`;
+  }
+
+  const renderFormattedText = (text: string): ReactNode[] => {
+    const fragments: ReactNode[] = [];
+    const segments = text.split(/(\*\*[^*]+\*\*)/g);
+
+    segments.forEach((segment, segIndex) => {
+      if (!segment) {
+        return;
+      }
+
+      const isBold = segment.startsWith('**') && segment.endsWith('**');
+      if (isBold) {
+        const content = segment.slice(2, -2);
+        fragments.push(
+          <strong key={`bold-${segIndex}`}>{content}</strong>
+        );
+        return;
+      }
+
+      const lines = segment.split('\n');
+      lines.forEach((line, lineIndex) => {
+        fragments.push(
+          <span key={`text-${segIndex}-${lineIndex}`}>{line}</span>
+        );
+        if (lineIndex < lines.length - 1) {
+          fragments.push(<br key={`br-${segIndex}-${lineIndex}`} />);
+        }
+      });
+    });
+
+    return fragments;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -120,121 +175,85 @@ export function AIAssistant() {
     }
   },[uid,projects])
 
-
-    const readableSize = (size: number) => {
-      const units = ['B', 'KB', 'MB', 'GB'];
-      let i = 0;
-      while (size >= 1024 && i < units.length - 1) {
-        size /= 1024;
-        i++;
-      }
-      return `${size.toFixed(1)} ${units[i]}`;
-    };
-    const getType = (mime: string): 'video' | 'audio' | 'document' => {
-      if (mime.startsWith('video')) return 'video';
-      if (mime.startsWith('audio')) return 'audio';
-      return 'document';
-    };
-
   const handleSendMessage = async () => {
-    let localUrl: string;
-    // if there is file send also and turn to string
+    const prompt = inputValue.trim();
 
-
-    if (file) {
-
-      // send to ai
-      await uploadFile(
-        {type: file.type.startsWith('video')  ? 'VIDEO' : file.type.startsWith('image') ? 'IMAGE' : file.type.startsWith('audio') ? 'AUDIO' : 'DOCUMENT',file,projId:project.id},
-        {
-          onSuccess: (data)=>{
-            const res:ResponseData = data
-          },
-          onError: (error)=>{
-            console.log(error)
-          }
-        }
-      )
-      
-        const filedata = new FormData();
-        filedata.append('file', file);
-
-        const formFile = filedata.get('file') as File;
-        localUrl = await getFileReaderUrl(formFile);
-        const library: LibraryItem = {
-          id: uuidv4(),
-          name: file.name,
-          type: getType(file.type),
-          size: readableSize(file.size),
-          // uploadedBy: 'current-user-id', // Replace with actual user ID
-          uploadedAt: new Date(),
-          tags: [],
-          thumbnail: localUrl, // Optional: assign local preview to thumbnail
-        };
-
-        // If it's a video or audio file, get the duration
-        if (file.type.startsWith('video') || file.type.startsWith('audio')) {
-          const media = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
-          media.preload = 'metadata';
-          media.onloadedmetadata = () => {
-            const duration = media.duration;
-            const minutes = Math.floor(duration / 60);
-            const seconds = Math.floor(duration % 60);
-            library.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          };
-          media.src = localUrl;
-        } else {
-          console.log('LibraryItem:', library);
-        }
-
-      await dispatch(getFile(library))
-      const activity:ActivityItem = {
-        icon: FileText,
-        id: uuidv4(),
-        type: "document",
-        title: "You uploaded a document to your library.",
-        time: new Date().toISOString(),
-      }
-      await dispatch(addActivity(activity))
+    if (!prompt) {
+      return;
     }
-    // send prompt to ai and get response back
-    await sendMessage({id:project.id,message:inputValue},{
-      onSuccess: (data)=>{
-        const res:ResponseData = data
-        const assistantMessage: Message = {
-          id: uuidv4(),
-          type: 'assistant',
-          content: {
-            text: res.answer,
-            // fileUrl: localUrl
-          },
-          timestamp: new Date().toISOString(),
-          category: detectCategory(inputValue),
-          confidence: Math.random() * 0.3 + 0.7 // 70-100% confidence
-        };
-        setMessages(prev=>[...prev,assistantMessage])
-      },
-      onError: (error)=>{
-        console.log(error)
-      }
-    })
-    // update ui message
+
+    if (!project) {
+      toast({
+        title: 'Project unavailable',
+        description: 'Select or create a project before starting a chat.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const userMessage: Message = {
       id: uuidv4(),
       type: 'user',
       content: {
-        text: inputValue,
-        fileUrl: localUrl,
-        },
-      timestamp: new Date().toISOString()
+        text: prompt,
+      },
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
-    setFile(undefined);
-    setPreview("");
-      
+
+    sendMessage(
+      { id: project.id, message: prompt },
+      {
+        onSuccess: (data) => {
+          const res: ResponseData = data;
+          const assistantMessage: Message = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: {
+              text: res.answer,
+            },
+            timestamp: new Date().toISOString(),
+            category: detectCategory(prompt),
+            confidence: Math.random() * 0.3 + 0.7,
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
+        },
+        onError: (error) => {
+          console.log(error);
+          toast({
+            title: 'Unable to send message',
+            description: 'Please try again in a moment.',
+            variant: 'destructive',
+          });
+        },
+      }
+    );
   };
+
+  const handleProjectFileSelection = useCallback(
+    (event?: ChangeEvent<HTMLInputElement>) => {
+      if (!project) {
+        toast({
+          title: 'Project unavailable',
+          description: 'Select or create a project before uploading files.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const fileList = event?.target?.files;
+      if (!fileList || fileList.length === 0) {
+        return;
+      }
+
+      const files = Array.from(fileList);
+      queueProjectUploads({ files, projectId: project.id });
+      setShowUploadOptions(false);
+    },
+    [project, queueProjectUploads, toast]
+  );
 
   const detectCategory = (input: string): Message['category'] => {
     const lower = input.toLowerCase();
@@ -346,14 +365,6 @@ Could you provide more specific details about your project requirements? This wi
       description: "Message content copied successfully",
     });
   };
-  const changeFile = async (e: ChangeEvent<HTMLInputElement>)=>{
-    const selectedFile = e.target.files ? e.target.files[0] : null;
-    if (selectedFile) {
-      setFile(selectedFile)
-      const url = await getFileReaderUrl(selectedFile)
-      setPreview(url)
-    }
-  }
   const createProposal = async (conversation: string)=> {
     const { 
         id:project_uid,
@@ -398,6 +409,38 @@ Could you provide more specific details about your project requirements? This wi
     findProject()
     scrollToBottom();
   }, [messages,findProject]);
+
+  useEffect(() => {
+    projectUploads.forEach((task) => {
+      if (!['success', 'error', 'canceled'].includes(task.status)) {
+        return;
+      }
+
+      if (handledUploadIdsRef.current.has(task.id)) {
+        return;
+      }
+
+      handledUploadIdsRef.current.add(task.id);
+
+      if (task.status === 'success') {
+        toast({
+          title: 'Upload complete',
+          description: `${task.file.name} uploaded successfully.`,
+        });
+      } else if (task.status === 'error') {
+        toast({
+          title: 'Upload failed',
+          description: task.error || `${task.file.name} failed to upload.`,
+          variant: 'destructive',
+        });
+      } else if (task.status === 'canceled') {
+        toast({
+          title: 'Upload canceled',
+          description: `${task.file.name} was canceled.`,
+        });
+      }
+    });
+  }, [projectUploads, toast]);
   return (
     <div className="p-6 h-full flex flex-col">
       <div className="mb-6">
@@ -452,7 +495,11 @@ Could you provide more specific details about your project requirements? This wi
                   >
                     
                     {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />}
-                    {message.content.text&&<div className="whitespace-pre-wrap text-sm">{message.content.text}</div>}
+                    {message.content.text && (
+                      <div className="text-sm whitespace-pre-wrap">
+                        {renderFormattedText(message.content.text)}
+                      </div>
+                    )}
                     
                     
                     {message.type === 'assistant' && (
@@ -520,7 +567,7 @@ Could you provide more specific details about your project requirements? This wi
                 </div>
               </div>
             )}
-            {MsgError||FileError&&(
+            {MsgError && (
               <div className="flex justify-center items-center w-full">
                 <p className="text-center text-red-500 text-sm  ">An error occurred while processing your request. Please try again later.</p>
               </div>
@@ -531,15 +578,70 @@ Could you provide more specific details about your project requirements? This wi
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="p-4 relative space-y-3 border-t border-border">
-          <UploadBtnWrap show={showUpload} changeFile={changeFile} />
-          {preview&&<div className="w-[300px] h-[200px] flex flex-col items-center justify-center ">
-            <MessageFile message={preview} />
-          </div>}
+        <div className="p-4 space-y-4 border-t border-border">
+          <div className="relative h-0">
+            <UploadBtnWrap show={showUploadOptions} changeFile={handleProjectFileSelection} />
+          </div>
+
+          {projectUploads.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-foreground">Project uploads</h4>
+                <span className="text-xs text-muted-foreground">
+                  {projectUploads.filter((task) => task.status === 'uploading' || task.status === 'queued').length} in progress
+                </span>
+              </div>
+              <div className="space-y-3">
+                {projectUploads.map((task) => {
+                  const statusMeta = uploadStatusConfig[task.status];
+                  const canCancel = task.status === 'uploading' || task.status === 'queued';
+                  const canRemove = task.status === 'success' || task.status === 'error' || task.status === 'canceled';
+
+                  return (
+                    <div key={task.id} className="rounded-lg border border-border bg-card px-3 py-2 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{task.file.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {formatFileSize(task.file.size)} · {task.messageType.toLowerCase()} · {task.file.type || 'unknown type'}
+                          </p>
+                        </div>
+                        <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <Progress value={task.progress} className="h-1.5" />
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{task.progress}%</span>
+                          {task.error && <span className="text-destructive">{task.error}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canCancel && (
+                          <Button variant="ghost" size="sm" onClick={() => cancelProjectUpload(task.id)}>
+                            <XCircle className="w-4 h-4 mr-1" /> Cancel
+                          </Button>
+                        )}
+                        {canRemove && (
+                          <Button variant="ghost" size="sm" onClick={() => removeProjectUpload(task.id)}>
+                            <Trash2 className="w-4 h-4 mr-1" /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button 
-            onClick={()=>setShowUpload(prev=>!prev)}
-            variant="outline" size="sm" className="px-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              onClick={() => setShowUploadOptions((prev) => !prev)}
+              disabled={!project || isUploadingProject}
+            >
               <Paperclip className="w-4 h-4" />
             </Button>
             <div className="flex-1 relative">
@@ -547,7 +649,12 @@ Could you provide more specific details about your project requirements? This wi
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask about calculations, standards, design recommendations..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 className="pr-20"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -564,7 +671,7 @@ Could you provide more specific details about your project requirements? This wi
                   size="sm"
                   className="h-6 w-6 p-0"
                   onClick={handleSendMessage}
-                  disabled={(!inputValue.trim() && !file) || MsgLoading}
+                  disabled={!inputValue.trim() || MsgLoading}
                 >
                   <Send className="w-4 h-4" />
                 </Button>
