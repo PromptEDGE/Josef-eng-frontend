@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders } from 'axios';
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '@/utils/authTokens';
 
 const baseURL = import.meta.env.VITE_BACKEND_URL as string;
@@ -32,21 +32,23 @@ apiClient.interceptors.response.use(
     const url = originalRequest.url || '';
 
     // Helpful in dev: see what we got back
-    // console.debug('API error', { status, url, data: error.response?.data });
+    console.debug('API error', { status, url, data: error.response?.data });
 
     // Do NOT intercept the refresh call itself
     const isRefreshCall = url?.includes('/api/v1/auth/refresh');
 
     // Detect “expired” both by HTTP status and common API error shapes
-    const data = error.response?.data as any;
+    const data = error.response as any;
     const looksExpired =
       status === 401 ||
       status === 403 ||
       status === 419 ||
       status === 498 ||
-      data?.error === 'token_expired' ||
-      data?.code === 'token_expired' ||
-      data?.message?.toString?.().toLowerCase?.().includes('expired');
+      error?.code === "ERR_BAD_REQUEST" ||
+      data?.detail
+        ?.toString?.()
+        .toLowerCase?.()
+        .includes("Invalid or expired token");
 
     if (!isRefreshCall && looksExpired && !originalRequest._retry) {
       const refresh = getRefreshToken();
