@@ -133,7 +133,7 @@ export default function NewProjectPage() {
     if(!isFormValid){
       toast({
         title: "Please fill all required fields",
-        description: "All fields marked (required) must be filled to proceed.",
+        // description: "All fields marked  must be filled to proceed.",
         variant: "destructive",
       })
       return 
@@ -223,7 +223,7 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="project-name">Project Name 
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Input
                     id="project-name"
@@ -234,7 +234,7 @@ export default function NewProjectPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="client">Client 
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Input
                     id="client"
@@ -248,7 +248,7 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Project Type 
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
                     <SelectTrigger>
@@ -268,7 +268,7 @@ export default function NewProjectPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Priority 
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
                     <SelectTrigger>
@@ -288,7 +288,7 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date 
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -315,7 +315,7 @@ export default function NewProjectPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>End Date 
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -345,7 +345,7 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="budget">Budget (USD)
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Input
                     id="budget"
@@ -357,7 +357,7 @@ export default function NewProjectPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location
-                    <span className="text-gray-300 ml-1">(required)</span>
+                    {/* <span className="text-gray-300 ml-1"></span> */}
                   </Label>
                   <Input
                     id="location"
@@ -370,7 +370,7 @@ export default function NewProjectPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Project Description
-                  <span className="text-gray-300 ml-1">(required)</span>
+                  {/* <span className="text-gray-300 ml-1"></span> */}
                 </Label>
                 <Textarea
                   id="description"
@@ -389,7 +389,7 @@ export default function NewProjectPage() {
               <CardTitle className="flex items-center gap-2">
                 <Wind className="w-5 h-5" />
                 HVAC Systems
-                <span className="text-gray-300 ml-1">(required)</span>
+                {/* <span className="text-gray-300 ml-1"></span> */}
               </CardTitle>
             </CardHeader>
             <CardContent>

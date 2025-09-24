@@ -181,14 +181,14 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                 <Brain className="w-4 h-4 mr-2" />
                 Start AI Chat
               </Button>
-              <Button 
+              {/* <Button 
                 variant="outline" 
                 onClick={() => onViewChange('/upload')}
                 className="border-primary-foreground/10 text-black hover:text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Files
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
@@ -208,7 +208,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                   </Badge>}
                 </div>
               </div>
-              <div className={`w-12 h-12 rounded-lg bg-gradient-card flex items-center justify-center ${stat.color}`}>
+              <div className={`w-12 h-12 rounded-lg dark:text-white bg-gradient-card flex items-center justify-center ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
               </div>
             </div>
@@ -228,7 +228,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                 onClick={() => onViewChange(action.action)}
               >
                 <div className="flex items-start gap-4 transition-all duration-300 transform ">
-                  <div className={`w-12 h-12 ${action.color} transition-all duration-300 transform rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-smooth`}>
+                  <div className={`w-12 h-12 ${action.color} dark:text-black transition-all duration-300 transform rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-smooth`}>
                     <action.icon className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
@@ -246,7 +246,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
         </div>
 
         {/* System Health */}
-        <div>
+        {/* <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">System Health</h2>
           <Card className="p-6">
             <div className="space-y-4">
@@ -269,86 +269,87 @@ export function Dashboard({ onViewChange }: DashboardProps) {
               ))}
             </div>
           </Card>
-        </div>
+        </div> */}
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
-          <Card className="p-6">
-            {recentActivity.length===0&&
-              <div className="capitalize flex items-center justify-center w-full ">
-                no activities
-              </div>
-            }
-            {recentActivity.length>0&&
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-smooth">
-                    <div className="w-10 h-10 bg-gradient-card rounded-lg flex items-center justify-center">
-                      <activity.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{activity.title}</p>
-                      <p className="text-sm text-muted-foreground">{new Date(activity.time).toLocaleString()}</p>
-                    </div>
-                    {/* {activity.status === 'completed' ? (
-                      <CheckCircle className="w-5 h-5 text-success" />
-                    ) : (
-                      <Clock className="w-5 h-5 text-warning" />
-                    )} */}
-                  </div>
-                ))}
-              </div>
-            }
-          </Card>
-        </div>
-
-        {/* AI Insights */}
-        {/* <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">AI Insights</h2>
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Efficiency Opportunity</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Consider variable speed drives for chillers in Project Alpha - potential 15% energy savings.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Standards Update</h4>
-                  <p className="text-sm text-muted-foreground">
-                    New ASHRAE 62.1 requirements may affect ventilation calculations in your current projects.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <Database className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Knowledge Base</h4>
-                  <p className="text-sm text-muted-foreground">
-                    47 new technical documents have been processed and added to your knowledge base.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div> */}
-      </div>
     </div>
   );
 }
+
+      // <div className="grid grid-cols-1 gap-6">
+      //   <div>
+      //     <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
+      //     <Card className="p-6">
+      //       {recentActivity.length===0&&
+      //         <div className="capitalize flex items-center justify-center w-full ">
+      //           no activities
+      //         </div>
+      //       }
+      //       {recentActivity.length>0&&
+      //         <div className="space-y-4">
+      //           {recentActivity.map((activity) => (
+      //             <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-smooth">
+      //               <div className="w-10 h-10 bg-gradient-card rounded-lg flex items-center justify-center">
+      //                 <activity.icon className="w-5 h-5 text-primary" />
+      //               </div>
+      //               <div className="flex-1">
+      //                 <p className="font-medium text-foreground">{activity.title}</p>
+      //                 <p className="text-sm text-muted-foreground">{new Date(activity.time).toLocaleString()}</p>
+      //               </div>
+      //               {/* {activity.status === 'completed' ? (
+      //                 <CheckCircle className="w-5 h-5 text-success" />
+      //               ) : (
+      //                 <Clock className="w-5 h-5 text-warning" />
+      //               )} */}
+      //             </div>
+      //           ))}
+      //         </div>
+      //       }
+      //     </Card>
+      //   </div>
+
+      //   {/* AI Insights */}
+      //   <div>
+      //     <h2 className="text-xl font-semibold text-foreground mb-4">AI Insights</h2>
+      //     <Card className="p-6">
+      //       <div className="space-y-4">
+      //         <div className="flex items-start gap-3">
+      //           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+      //             <Zap className="w-4 h-4 text-primary-foreground" />
+      //           </div>
+      //           <div>
+      //             <h4 className="font-medium text-foreground">Efficiency Opportunity</h4>
+      //             <p className="text-sm text-muted-foreground">
+      //               Consider variable speed drives for chillers in Project Alpha - potential 15% energy savings.
+      //             </p>
+      //           </div>
+      //         </div>
+              
+      //         <div className="flex items-start gap-3">
+      //           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+      //             <AlertTriangle className="w-4 h-4 text-primary-foreground" />
+      //           </div>
+      //           <div>
+      //             <h4 className="font-medium text-foreground">Standards Update</h4>
+      //             <p className="text-sm text-muted-foreground">
+      //               New ASHRAE 62.1 requirements may affect ventilation calculations in your current projects.
+      //             </p>
+      //           </div>
+      //         </div>
+
+      //         <div className="flex items-start gap-3">
+      //           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+      //             <Database className="w-4 h-4 text-primary-foreground" />
+      //           </div>
+      //           <div>
+      //             <h4 className="font-medium text-foreground">Knowledge Base</h4>
+      //             <p className="text-sm text-muted-foreground">
+      //               47 new technical documents have been processed and added to your knowledge base.
+      //             </p>
+      //           </div>
+      //         </div>
+      //       </div>
+      //     </Card>
+      //   </div>
+      // </div>
