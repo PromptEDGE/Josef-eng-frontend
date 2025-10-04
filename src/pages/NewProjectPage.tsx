@@ -28,6 +28,7 @@ import {
   Droplets,
   FolderCheck,
   LoaderIcon,
+  Plus,
 } from 'lucide-react';
 import { ActivityItem, CreateProjectType, ProjectData } from '@/utils/types';
 import { useDispatch, useSelector } from 'react-redux';
@@ -66,6 +67,7 @@ const systemOptions = [
   { id: 'clean-rooms', name: 'Clean Rooms', icon: Building },
   { id: 'hot-water', name: 'Hot Water', icon: Droplets },
   { id: 'steam', name: 'Steam', icon: Thermometer },
+  { id: 'others', name: 'Others', icon: Plus },
 ];
 
 type CollectInfo = {
