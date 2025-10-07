@@ -5,9 +5,9 @@ import { Navigate } from "react-router-dom";
 
 const ProtectedRoutes = ({children}:{children:ReactNode}) => {
     const user = useSelector((state:RootState)=>state.localStorage.user)
-        if(!user){
-            return <Navigate replace to="/signin" />
-        }
+        // if(!user){
+        //     return <Navigate replace to="/signin" />
+        // }
     return (
     <>
         {children}

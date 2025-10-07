@@ -103,6 +103,7 @@ export function AIAssistant() {
     cancelUpload: cancelProjectUpload,
     removeUpload: removeProjectUpload,
     isUploading: isUploadingProject,
+    clearUploads: clearProjectUploadsUi,
   } = useUploadFiles()
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
@@ -202,6 +203,10 @@ export function AIAssistant() {
       },
       timestamp: new Date().toISOString(),
     };
+
+    if(projectUploads.length>0&&!isUploadingProject){
+      clearProjectUploadsUi();
+    }
 
     appendMessage(userMessage);
     setInputValue('');
@@ -607,57 +612,58 @@ export function AIAssistant() {
             <UploadBtnWrap show={showUploadOptions} changeFile={handleProjectFileSelection} />
           </div>}
 
-          {projectUploads.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Project uploads</h4>
-                <span className="text-xs text-muted-foreground">
-                  {projectUploads.filter((task) => task.status === 'uploading' || task.status === 'queued').length} in progress
-                </span>
-              </div>
-              <div className="space-y-3">
-                {projectUploads.map((task) => {
-                  const statusMeta = uploadStatusConfig[task.status];
-                  const canCancel = task.status === 'uploading' || task.status === 'queued';
-                  const canRemove = task.status === 'success' || task.status === 'error' || task.status === 'canceled';
+          <>
+            {projectUploads.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-foreground">Project uploads</h4>
+                  <span className="text-xs text-muted-foreground">
+                    {projectUploads.filter((task) => task.status === 'uploading' || task.status === 'queued').length} in progress
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {projectUploads.map((task) => {
+                    const statusMeta = uploadStatusConfig[task.status];
+                    const canCancel = task.status === 'uploading' || task.status === 'queued';
+                    const canRemove = task.status === 'success' || task.status === 'error' || task.status === 'canceled';
 
-                  return (
-                    <div key={task.id} className="rounded-lg border border-border bg-card px-3 py-2 space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{task.file.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {formatFileSize(task.file.size)} · {task.messageType.toLowerCase()} · {task.file.type || 'unknown type'}
-                          </p>
+                    return (
+                      <div key={task.id} className="rounded-lg border border-border bg-card px-3 py-2 space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{task.file.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {formatFileSize(task.file.size)} · {task.messageType.toLowerCase()} · {task.file.type || 'unknown type'}
+                            </p>
+                          </div>
+                          <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                         </div>
-                        <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-                      </div>
-                      <div className="space-y-2">
-                        <Progress value={task.progress} className="h-1.5" />
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{task.progress}%</span>
-                          {task.error && <span className="text-destructive">{task.error}</span>}
+                        <div className="space-y-2">
+                          <Progress value={task.progress} className="h-1.5" />
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{task.progress}%</span>
+                            {task.error && <span className="text-destructive">{task.error}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canCancel && (
+                            <Button variant="ghost" size="sm" onClick={() => cancelProjectUpload(task.id)}>
+                              <XCircle className="w-4 h-4 mr-1" /> Cancel
+                            </Button>
+                          )}
+                          {canRemove && (
+                            <Button variant="ghost" size="sm" onClick={() => removeProjectUpload(task.id)}>
+                              <Trash2 className="w-4 h-4 mr-1" /> Remove
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {canCancel && (
-                          <Button variant="ghost" size="sm" onClick={() => cancelProjectUpload(task.id)}>
-                            <XCircle className="w-4 h-4 mr-1" /> Cancel
-                          </Button>
-                        )}
-                        {canRemove && (
-                          <Button variant="ghost" size="sm" onClick={() => removeProjectUpload(task.id)}>
-                            <Trash2 className="w-4 h-4 mr-1" /> Remove
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-          <></>
+            )}
+          </>
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">

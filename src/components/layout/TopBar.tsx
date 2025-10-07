@@ -72,9 +72,9 @@ export function TopBar() {
         </Button>
 
         {/* Help */}
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        {/* <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
           <HelpCircle className="w-4 h-4" />
-        </Button>
+        </Button> */}
 
         {/* Notifications */}
        {user&& <DropdownMenu>

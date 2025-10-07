@@ -168,6 +168,12 @@ const useUploadFiles = () => {
     [uploads]
   );
 
+
+  // update upload array for ui 
+  const clearUploads = ()=>{
+    setUploads([]);
+  }
+
   return {
     uploads,
     isUploading,
@@ -176,6 +182,7 @@ const useUploadFiles = () => {
     cancelUpload,
     removeUpload,
     resetUploads,
+    clearUploads
   };
 };
 
