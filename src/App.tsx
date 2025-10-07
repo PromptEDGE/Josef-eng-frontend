@@ -16,6 +16,7 @@ import SettingsPage from "./pages/SettingsPage";
 import StandardsPage from "./pages/StandardsPage";
 import LibraryPage from "./pages/LibraryPage";
 import ProposalsPage from "./pages/ProposalsPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import SignupPage from "./pages/SignupPage";
 import SignInPage from "./pages/SignInPage";
@@ -64,6 +65,8 @@ const App = () => {
               } />
             <Route path="standards" element={
               <ProtectedRoutes><StandardsPage /></ProtectedRoutes>} />
+            <Route path="profile" element={<ProtectedRoutes><ProfilePage /></ProtectedRoutes>} />
+            <Route path="settings" element={<ProtectedRoutes><SettingsPage /></ProtectedRoutes>} />
             <Route path="projects/new" element={<ProtectedRoutes><NewProjectPage /></ProtectedRoutes>} />
             <Route path="library" element={<ProtectedRoutes><LibraryPage /></ProtectedRoutes>} />
             <Route path="library/videos" element={

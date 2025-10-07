@@ -1,4 +1,9 @@
-import { listDocuments, DocumentRecord } from "@/api/documents";
+import {
+    listDocuments,
+    DocumentRecord,
+    getDocumentDownloadUrl,
+    DocumentDownloadResponse,
+} from "@/api/documents";
 import {  getAllLibrary } from "@/lib/redux/slice/librarySlice";
 import { LibraryItem } from "@/utils/types";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +26,10 @@ const useGetLibrary = () => {
         return `${backendUrl}${normalizedPath}`;
     };
 
-    const mapDocumentToLibraryItem = (doc: DocumentRecord): LibraryItem => {
+    const mapDocumentToLibraryItem = (
+        doc: DocumentRecord,
+        downloadData?: DocumentDownloadResponse
+    ): LibraryItem => {
         const contentType = doc.content_type || "";
         const normalizedType = contentType.startsWith("video")
             ? "video"
@@ -37,7 +45,7 @@ const useGetLibrary = () => {
             ? [doc.status.replace(/_/g, ' ').toLowerCase()]
             : [];
 
-        const downloadUrl = toAbsoluteUrl(doc.storage_path);
+        const downloadUrl = downloadData?.download_url ?? toAbsoluteUrl(doc.storage_path);
 
         return {
             id: doc.id,
@@ -56,16 +64,33 @@ const useGetLibrary = () => {
         };
     };
 
-    const { data,refetch,isError,isSuccess,isLoading } = useQuery({
+    const { data,refetch,isError,isSuccess,isLoading } = useQuery<LibraryItem[]>({
         queryKey: ['library-documents'],
-        queryFn: () => listDocuments(),
+        queryFn: async () => {
+            const docs = await listDocuments();
+            const downloadResults = await Promise.allSettled(
+                docs.map((doc) => getDocumentDownloadUrl(doc.id))
+            );
+
+            const downloadMap = new Map<string, DocumentDownloadResponse>();
+            downloadResults.forEach((result, index) => {
+                if (result.status === "fulfilled") {
+                    downloadMap.set(docs[index].id, result.value);
+                } else {
+                    console.error(
+                        "Failed to fetch download URL",
+                        { documentId: docs[index].id, error: result.reason }
+                    );
+                }
+            });
+
+            return docs.map((doc) => mapDocumentToLibraryItem(doc, downloadMap.get(doc.id)));
+        },
         staleTime: 1000 * 60 * 5, // 5 minutes
     })
     useEffect(()=>{
         if(data){
-            const library: LibraryItem[] = data.map(mapDocumentToLibraryItem)
-            // save to redux
-            dispatch(getAllLibrary(library))
+            dispatch(getAllLibrary(data))
         }
     },[data,dispatch])
     return {

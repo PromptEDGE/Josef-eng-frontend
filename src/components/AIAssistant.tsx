@@ -109,8 +109,10 @@ export function AIAssistant() {
   const { project: projectDetail, messages, isLoading: isProjectLoading, appendMessage } = useProjectChat(uid);
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState<boolean>(false);
+  const [isSpeechSupported, setIsSpeechSupported] = useState<boolean>(true);
   const [showUploadOptions, setShowUploadOptions] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
   const handledUploadIdsRef = useRef(new Set<string>());
 
@@ -273,18 +275,106 @@ export function AIAssistant() {
     return 'general';
   };
 
-  const toggleListening = () => {
-    setIsListening(!isListening);
-    if (!isListening) {
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSpeechSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event);
+      setIsListening(false);
+      const description = event?.error === 'not-allowed'
+        ? 'Microphone access was denied. Please enable it in your browser settings.'
+        : 'An error occurred while listening. Please try again.';
       toast({
-        title: "Voice input activated",
-        description: "Start speaking your question",
+        title: 'Voice input error',
+        description,
+        variant: 'destructive',
+      });
+    };
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0]?.transcript ?? '';
+        }
+      }
+
+      finalTranscript = finalTranscript.trim();
+      if (finalTranscript) {
+        setInputValue((prev) => {
+          if (!prev) return finalTranscript;
+          const separator = prev.endsWith(' ') ? '' : ' ';
+          return `${prev}${separator}${finalTranscript}`;
+        });
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onstart = null;
+      recognition.onend = null;
+      try {
+        recognition.stop();
+      } catch (error) {
+        // ignore stop errors on cleanup
+      }
+      recognitionRef.current = null;
+    };
+  }, [toast]);
+
+  const toggleListening = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition || !isSpeechSupported) {
+      toast({
+        title: 'Voice input unavailable',
+        description: 'Your browser does not support speech recognition.',
+      });
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      toast({
+        title: 'Voice input stopped',
+        description: 'Processing your voice input.',
       });
     } else {
-      toast({
-        title: "Voice input stopped",
-        description: "Processing your voice input",
-      });
+      try {
+        recognition.start();
+        toast({
+          title: 'Voice input activated',
+          description: 'Start speaking your question.',
+        });
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        toast({
+          title: 'Unable to start voice input',
+          description: 'Microphone may be in use or permission was denied.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -594,14 +684,16 @@ export function AIAssistant() {
                   className="pr-20"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={toggleListening}
-                  >
-                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={toggleListening}
+                  disabled={!isSpeechSupported}
+                  aria-label={isSpeechSupported ? 'Toggle voice input' : 'Voice input not supported'}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </Button>
                   <Button
                     variant="ghost"
                     size="sm"

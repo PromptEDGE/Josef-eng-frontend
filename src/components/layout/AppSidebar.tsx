@@ -24,6 +24,8 @@ import {
   Video,
   Mic,
   FileText,
+  UserCircle,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
@@ -39,11 +41,16 @@ const projectNavItems = [
   { title: 'Library', url: '/library', icon: FolderOpen },
 ];
 
+const accountNavItems = [
+  { title: 'Profile', url: '/profile', icon: UserCircle },
+  { title: 'Settings', url: '/settings', icon: SettingsIcon },
+];
 
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
   const user = useSelector((state:RootState)=>state.localStorage.user)
+  const profile = useSelector((state:RootState)=>state.settings.profile)
   const library = useSelector((state:RootState)=>state.library.library)
   const proposal = useSelector((state:RootState)=>state.proposal.proposal)
   const { state } = useSidebar();
@@ -141,6 +148,26 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarGroup>
+          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {accountNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild className={getNavClassName(item.url)}>
+                    <NavLink to={item.url} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <item.icon className={collapsed ? 'w-4 h-4' : 'w-4 h-4 mr-3'} />
+                        {!collapsed && <span>{item.title}</span>}
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Library - Show when on library routes */}
         {/* {!collapsed && location.pathname.startsWith('/library') && (
           <SidebarGroup>
@@ -216,19 +243,19 @@ export function AppSidebar() {
               <>
               {!collapsed && (
                 <SidebarFooter className="p-4 border-t border-border">
-                  <div className="flex items-center gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src="" />
-                        <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                          {user?.user.first_name[0] + ' ' + user?.user.last_name[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground"> {user.user.last_name + " " + user.user.first_name} </p>
-                        <p className="text-xs text-muted-foreground">HVAC Engineer</p>
-                      </div>
-                      <div className="w-2 h-2 bg-success rounded-full"></div>
-                  </div>
+                  <Link to="/profile" className="flex items-center gap-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={profile.avatarUrl} />
+                      <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
+                        {(profile.firstName?.[0] ?? user?.user.first_name?.[0] ?? 'H') + (profile.lastName?.[0] ?? user?.user.last_name?.[0] ?? 'V')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-foreground">{profile.firstName} {profile.lastName}</p>
+                      <p className="text-xs text-muted-foreground">{profile.title || 'HVAC Engineer'}</p>
+                    </div>
+                    <div className="w-2 h-2 bg-success rounded-full" aria-hidden />
+                  </Link>
                 </SidebarFooter>
               )}
               </>

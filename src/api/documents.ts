@@ -88,3 +88,20 @@ export const listDocuments = async (): Promise<DocumentRecord[]> => {
   const response = await apiClient.get<DocumentRecord[]>(`/api/v1/documents`);
   return response.data;
 };
+
+export interface DocumentDownloadResponse {
+  id: string;
+  filename: string;
+  content_type: string;
+  download_url: string;
+  expires_in: number;
+}
+
+export const getDocumentDownloadUrl = async (
+  documentId: string
+): Promise<DocumentDownloadResponse> => {
+  const response = await apiClient.get<DocumentDownloadResponse>(
+    `/api/v1/documents/${documentId}/download`
+  );
+  return response.data;
+};

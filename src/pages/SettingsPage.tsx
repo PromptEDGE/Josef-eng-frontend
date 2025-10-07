@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -15,75 +16,127 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import {
-  User,
   Bell,
-  Shield,
-  Palette,
-  Database,
-  Key,
-  Mail,
-  Phone,
-  MapPin,
   Building,
-  Save,
+  Database,
   Download,
-  Upload,
-  Trash2,
-  Settings,
-  Users,
-  Lock,
   Eye,
   EyeOff,
-  Globe,
+  Key,
+  Lock,
+  Mail,
+  MapPin,
   Moon,
+  Palette,
+  Phone,
+  Save,
+  Settings,
+  Shield,
   Sun,
-  Volume2,
-  VolumeX,
+  Trash2,
+  Upload,
+  User,
+  Users,
 } from 'lucide-react';
+import { RootState } from '@/lib/redux/store';
+import {
+  setAvatar,
+  updatePreferences,
+  updateProfile,
+  updateSecurity,
+} from '@/lib/redux/slice/settingsSlice';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@company.com',
-    phone: '+1 (555) 123-4567',
-    company: 'Engineering Solutions Inc.',
-    title: 'Senior HVAC Engineer',
-    location: 'New York, NY',
-    bio: 'Experienced HVAC engineer specializing in commercial and industrial systems.',
-  });
+  const dispatch = useDispatch();
+  const { toast } = useToast();
 
-  const [preferences, setPreferences] = useState({
-    theme: 'light',
-    language: 'en',
-    timezone: 'America/New_York',
-    emailNotifications: true,
-    pushNotifications: true,
-    soundNotifications: false,
-    autoSave: true,
-    showTips: true,
-  });
+  const profileState = useSelector((state: RootState) => state.settings.profile);
+  const preferences = useSelector((state: RootState) => state.settings.preferences);
+  const security = useSelector((state: RootState) => state.settings.security);
 
-  const [security, setSecurity] = useState({
-    twoFactorEnabled: false,
-    sessionTimeout: '30',
-    passwordLastChanged: new Date('2024-01-01'),
-  });
-
+  const [profileForm, setProfileForm] = useState(profileState);
   const [showPassword, setShowPassword] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(profileState.avatarUrl);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleProfileChange = (field: string, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    setProfileForm(profileState);
+    setAvatarPreview(profileState.avatarUrl);
+  }, [profileState]);
+
+  const profileInitials = useMemo(() => {
+    const first = profileForm.firstName?.[0] ?? '';
+    const last = profileForm.lastName?.[0] ?? '';
+    return `${first}${last}`.trim() || 'HV';
+  }, [profileForm.firstName, profileForm.lastName]);
+
+  const handleProfileChange = (field: keyof typeof profileForm, value: string) => {
+    setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePreferenceChange = (field: string, value: boolean | string) => {
-    setPreferences(prev => ({ ...prev, [field]: value }));
+  const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : undefined;
+      setAvatarPreview(result);
+      dispatch(setAvatar(result));
+      toast({
+        title: 'Avatar updated',
+        description: 'Your profile photo has been updated.',
+      });
+    };
+    reader.onerror = () => {
+      toast({
+        title: 'Upload failed',
+        description: 'We could not read that file. Please try a different image.',
+        variant: 'destructive',
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleSecurityChange = (field: string, value: boolean | string) => {
-    setSecurity(prev => ({ ...prev, [field]: value }));
+  const handleAvatarRemove = () => {
+    setAvatarPreview(undefined);
+    dispatch(setAvatar(undefined));
+    toast({
+      title: 'Avatar removed',
+      description: 'Your profile photo has been removed.',
+    });
+  };
+
+  const handleSaveProfile = () => {
+    dispatch(updateProfile(profileForm));
+    toast({
+      title: 'Profile saved',
+      description: 'Your profile information has been updated.',
+    });
+  };
+
+  const handlePreferenceChange = (field: keyof typeof preferences, value: boolean | string) => {
+    dispatch(updatePreferences({ [field]: value } as Partial<typeof preferences>));
+  };
+
+  const handleSecurityChange = (field: keyof typeof security, value: boolean | string) => {
+    dispatch(updateSecurity({ [field]: value } as Partial<typeof security>));
+    if (field === 'twoFactorEnabled') {
+      toast({
+        title: value ? 'Two-factor enabled' : 'Two-factor disabled',
+        description: value
+          ? 'Two-factor authentication is now required when you sign in.'
+          : 'Two-factor authentication has been turned off.',
+      });
+    }
+    if (field === 'sessionTimeout') {
+      toast({
+        title: 'Session timeout updated',
+        description: `New session timeout set to ${value} minutes.`,
+      });
+    }
   };
 
   return (
@@ -113,21 +166,27 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Avatar Section */}
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src="" />
+                  <AvatarImage src={avatarPreview} />
                   <AvatarFallback className="bg-gradient-hero text-primary-foreground text-2xl font-bold">
-                    {profile.firstName[0]}{profile.lastName[0]}
+                    {profileInitials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                       <Upload className="w-4 h-4 mr-2" />
                       Upload Photo
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleAvatarRemove}>
                       <Trash2 className="w-4 h-4 mr-2" />
                       Remove
                     </Button>
@@ -140,13 +199,12 @@ export default function SettingsPage() {
 
               <Separator />
 
-              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
-                    value={profile.firstName}
+                    value={profileForm.firstName}
                     onChange={(e) => handleProfileChange('firstName', e.target.value)}
                   />
                 </div>
@@ -154,7 +212,7 @@ export default function SettingsPage() {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
-                    value={profile.lastName}
+                    value={profileForm.lastName}
                     onChange={(e) => handleProfileChange('lastName', e.target.value)}
                   />
                 </div>
@@ -169,7 +227,7 @@ export default function SettingsPage() {
                       id="email"
                       type="email"
                       className="pl-10"
-                      value={profile.email}
+                      value={profileForm.email}
                       onChange={(e) => handleProfileChange('email', e.target.value)}
                     />
                   </div>
@@ -181,7 +239,7 @@ export default function SettingsPage() {
                     <Input
                       id="phone"
                       className="pl-10"
-                      value={profile.phone}
+                      value={profileForm.phone}
                       onChange={(e) => handleProfileChange('phone', e.target.value)}
                     />
                   </div>
@@ -196,7 +254,7 @@ export default function SettingsPage() {
                     <Input
                       id="company"
                       className="pl-10"
-                      value={profile.company}
+                      value={profileForm.company}
                       onChange={(e) => handleProfileChange('company', e.target.value)}
                     />
                   </div>
@@ -205,7 +263,7 @@ export default function SettingsPage() {
                   <Label htmlFor="title">Job Title</Label>
                   <Input
                     id="title"
-                    value={profile.title}
+                    value={profileForm.title}
                     onChange={(e) => handleProfileChange('title', e.target.value)}
                   />
                 </div>
@@ -218,7 +276,7 @@ export default function SettingsPage() {
                   <Input
                     id="location"
                     className="pl-10"
-                    value={profile.location}
+                    value={profileForm.location}
                     onChange={(e) => handleProfileChange('location', e.target.value)}
                   />
                 </div>
@@ -230,17 +288,17 @@ export default function SettingsPage() {
                   id="bio"
                   rows={3}
                   placeholder="Tell us about yourself..."
-                  value={profile.bio}
+                  value={profileForm.bio}
                   onChange={(e) => handleProfileChange('bio', e.target.value)}
                 />
               </div>
 
               <div className="flex gap-2">
-                <Button className="bg-gradient-primary text-primary-foreground">
+                <Button className="bg-gradient-primary text-primary-foreground" onClick={handleSaveProfile}>
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => setProfileForm(profileState)}>
                   Cancel
                 </Button>
               </div>
@@ -404,11 +462,6 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-
-              <Button className="bg-gradient-primary text-primary-foreground">
-                <Save className="w-4 h-4 mr-2" />
-                Save Preferences
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -508,7 +561,7 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <p className="font-medium text-sm">Recent Security Events</p>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p>• Password last changed: {security.passwordLastChanged.toLocaleDateString()}</p>
+                  <p>• Password last changed: {new Date(security.passwordLastChanged).toLocaleDateString()}</p>
                   <p>• Last login: Today at 9:24 AM</p>
                   <p>• Failed login attempts: 0</p>
                 </div>

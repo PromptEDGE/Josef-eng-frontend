@@ -110,6 +110,7 @@ const systemHealth = [
 export function Dashboard({ onViewChange }: DashboardProps) {
   const activites = useSelector((state:RootState)=>state.activites.activities)
   const projects = useSelector((state:RootState)=>state.project.project)
+  const documents = useSelector((state:RootState)=>state.library.library)
   const [recentActivity,setRecentActivity] = useState<ActivityItem[]>([])
   type Stats={
     id:string,
@@ -123,8 +124,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
   {
     id: 'documents',
     label: 'Documents Processed',
-    value: 247,
-    change: 12,
+    value: documents?.length,
     icon: FileText,
     color: 'text-primary'
   },
