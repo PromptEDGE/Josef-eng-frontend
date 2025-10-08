@@ -24,10 +24,11 @@ import {
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { clearTokens } from '@/utils/authTokens';
 import { clearUser as clearStoredUser } from '@/lib/redux/slice/localStorageSlice';
 import { clearUser as clearUserDetails } from '@/lib/redux/slice/userSlice';
+import { clearPersistedState } from '@/lib/redux/persistState';
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
@@ -35,6 +36,7 @@ export function TopBar() {
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
+  const navigate = useNavigate();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -47,6 +49,7 @@ export function TopBar() {
     // Reset slices
     dispatch(clearStoredUser());
     dispatch(clearUserDetails());
+    clearPersistedState();
     window.location.href = '/signin';
   };
   return (
@@ -128,12 +131,12 @@ export function TopBar() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() =>navigate('/profile')} >
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() =>navigate('/settings')}>
+              <Settings  className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />

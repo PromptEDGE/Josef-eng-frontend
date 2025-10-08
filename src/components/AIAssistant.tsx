@@ -639,7 +639,9 @@ export function AIAssistant() {
                           <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                         </div>
                         <div className="space-y-2">
-                          <Progress value={task.progress} className="h-1.5" />
+                          <Progress 
+                          value={task.progress} 
+                          className="h-1.5 [&>div]:transition-all [&>div]:duration-700 [&>div]:ease-in-out" />
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span>{task.progress}%</span>
                             {task.error && <span className="text-destructive">{task.error}</span>}
