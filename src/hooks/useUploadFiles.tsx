@@ -115,22 +115,22 @@ const useUploadFiles = () => {
         controllersRef.current.set(task.id, controller);
 
         const startedAt = Date.now();
-        updateUpload(task.id, { status: "uploading", startedAt });
+        updateUpload(task.id, { status: "uploading", progress:50, startedAt });
 
         try {
           const data = projectId
             ? await uploadProjectFile(projectId, task.file, task.messageType, {
                 signal: controller.signal,
                 metadata,
-                onProgress: ({ progress }) => {
-                  updateUpload(task.id, { progress });
+                onProgress: () => {
+                  updateUpload(task.id, { progress: 60 });
                 },
               })
             : await uploadGeneralFile(task.file, task.messageType, {
                 signal: controller.signal,
                 metadata,
-                onProgress: ({ progress }) => {
-                  updateUpload(task.id, { progress });
+                onProgress: () => {
+                  updateUpload(task.id, { progress: 90 });
                 },
               });
 
@@ -148,6 +148,7 @@ const useUploadFiles = () => {
             status,
             error: aborted ? "Upload canceled" : errorMessageFrom(error),
             completedAt: Date.now(),
+            progress: 0,
           });
         } finally {
           controllersRef.current.delete(task.id);
