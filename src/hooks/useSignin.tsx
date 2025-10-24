@@ -21,6 +21,7 @@ const useSignin = () => {
         dispatch(setUser(data));
         // Store only user details in user slice
         dispatch(getUser(data.user));
+        console.log(data)
         navigate("/")
         toast({
             title: "SignIn successful",

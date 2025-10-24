@@ -623,7 +623,7 @@ export function AIAssistant() {
                 </div>
                 <div className="space-y-3">
                   {projectUploads.map((task) => {
-                    const statusMeta = uploadStatusConfig[task.status];
+                    const statusMeta = uploadStatusConfig[task?.status];
                     const canCancel = task.status === 'uploading' || task.status === 'queued';
                     const canRemove = task.status === 'success' || task.status === 'error' || task.status === 'canceled';
 
@@ -636,7 +636,7 @@ export function AIAssistant() {
                               {formatFileSize(task.file.size)} · {task.messageType.toLowerCase()} · {task.file.type || 'unknown type'}
                             </p>
                           </div>
-                          <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                          <Badge variant={statusMeta?.variant}>{statusMeta?.label}</Badge>
                         </div>
                         <div className="space-y-2">
                           <Progress 

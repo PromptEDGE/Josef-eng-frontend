@@ -54,9 +54,14 @@ const postMultipart = async (
       },
     }
   );
-
   return response.data;
 };
+
+export const uploadStatus = async (taskId: string) => {
+  const res = await apiClient.post(`/api/v1/projects/upload/status`,{ task_id: taskId });
+  return res.data;
+};
+
 
 export const uploadProjectFile = (
   projId: string,
