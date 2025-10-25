@@ -140,6 +140,12 @@ export default function NewProjectPage() {
       })
       return 
     }
+    if(formData.startDate>formData.endDate){
+      toast({
+        title: "Start date must be before end date",
+    })
+      return 
+    }
     if(!user){
       toast({
         title: "sign in to continue",
