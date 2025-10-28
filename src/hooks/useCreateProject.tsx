@@ -5,6 +5,7 @@ import { createProject } from "@/api/project";
 import useProjects from "./useProjects";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { isAxiosError } from "axios";
 
 const useCreateProject = () => {
     const { toast } = useToast()
@@ -22,11 +23,20 @@ const useCreateProject = () => {
         navigate(`/project/${data?.id}`);
         },
         onError: (error) => {
-        toast({
-            title: "Error",
-            description: error.message || "Failed to create project.",
-            variant: "destructive",
-        });
+            if(isAxiosError(error)){
+                console.log(error)
+                toast({
+                    title: "Error",
+                    description: error.response?.data.detail,
+                    variant: "destructive",
+                })
+            }else{
+                toast({
+                    title: "Error",
+                    description: error.message || "Failed to create project.",
+                    variant: "destructive",
+                });
+            }
         }
   });
     return {

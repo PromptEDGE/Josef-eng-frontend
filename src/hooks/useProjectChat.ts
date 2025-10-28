@@ -64,15 +64,15 @@ const useProjectChat = (projectId: string | undefined) => {
     const historyMessages = mapHistoryToMessages(chat_history);
     const existing = messagesRef.current ?? [];
     const knownIds = new Set(historyMessages.map((msg) => msg.id));
-    const merged = [...historyMessages];
-    existing.forEach((msg) => {
-      if (!knownIds.has(msg.id)) {
-        merged.push(msg);
-      }
-    });
+    // const merged = [...historyMessages];
+    // existing.forEach((msg) => {
+    //   if (!knownIds.has(msg.id)) {
+    //     merged.push(msg);
+    //   }
+    // });
 
     dispatch(setProjectDetail({ projectId: lowerId, detail: { ...project, id: project.id } }));
-    dispatch(setProjectChat({ projectId: lowerId, messages: merged }));
+    dispatch(setProjectChat({ projectId: lowerId, messages: historyMessages }));
   }, [dispatch, query.data, projectId]);
 
   const hasMessages = Boolean(messages && messages.length);

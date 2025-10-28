@@ -7,6 +7,7 @@ import { useToast } from "./use-toast";
 import { signInUser } from "@/api/auth";
 import { getUser } from "@/lib/redux/slice/userSlice";
 import { setTokens } from "@/utils/authTokens";
+import { isAxiosError } from "axios";
 
 const useSignin = () => {
     const navigate = useNavigate()
@@ -21,6 +22,7 @@ const useSignin = () => {
         dispatch(setUser(data));
         // Store only user details in user slice
         dispatch(getUser(data.user));
+        console.log(data)
         navigate("/")
         toast({
             title: "SignIn successful",
@@ -28,11 +30,20 @@ const useSignin = () => {
         });
         },
         onError: (error) => {
-        toast({
-            title: "SignIn failed",
-            description: error.message,
-            variant: "destructive",
-        });
+            if(isAxiosError(error)){
+                toast({
+                    title: "SignIn failed",
+                    description: error.response?.data.detail,
+                    variant: "destructive",
+                });
+            }else{
+                toast({
+                    title: "SignIn failed",
+                    description: error.message,
+                    variant: "destructive",
+                });
+
+            }
         }
     });
     const handleSignin = async (data: SignInFormType) => {
