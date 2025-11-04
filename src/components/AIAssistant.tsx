@@ -116,6 +116,11 @@ export function AIAssistant() {
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
   const handledUploadIdsRef = useRef(new Set<string>());
+  const [uploadedFilesData, setUploadedFilesData] = useState<Array<{
+    filename: string;
+    file_type: string;
+    full_content: string;
+  }>>([]);
 
   const uploadStatusConfig: Record<UploadStatus, { label: string; variant: 'secondary' | 'outline' | 'destructive' }> = {
     queued: { label: 'Queued', variant: 'outline' },
@@ -212,7 +217,11 @@ export function AIAssistant() {
     setInputValue('');
 
     sendMessage(
-      { id: project.id, message: prompt },
+      {
+        id: project.id,
+        message: prompt,
+        uploadedFiles: uploadedFilesData.length > 0 ? uploadedFilesData : undefined
+      },
       {
         onSuccess: (data) => {
           const res: ResponseData = data;
@@ -227,6 +236,9 @@ export function AIAssistant() {
             confidence: Math.random() * 0.3 + 0.7,
           };
           appendMessage(assistantMessage);
+
+          // Clear uploaded files data after successful response
+          setUploadedFilesData([]);
         },
         onError: (error) => {
           console.log(error);
@@ -451,6 +463,18 @@ export function AIAssistant() {
           title: 'Upload complete',
           description: `${task.file.name} uploaded successfully.`,
         });
+
+        // Store uploaded file data for sending with chat requests
+        if (task.data && typeof task.data === 'object') {
+          const responseData = task.data as any;
+          if (responseData.full_content && responseData.filename && responseData.file_type) {
+            setUploadedFilesData(prev => [...prev, {
+              filename: responseData.filename,
+              file_type: responseData.file_type,
+              full_content: responseData.full_content
+            }]);
+          }
+        }
       } else if (task.status === 'error') {
         toast({
           title: 'Upload failed',
