@@ -29,6 +29,8 @@ import { clearTokens } from '@/utils/authTokens';
 import { clearUser as clearStoredUser } from '@/lib/redux/slice/localStorageSlice';
 import { clearUser as clearUserDetails } from '@/lib/redux/slice/userSlice';
 import { clearPersistedState } from '@/lib/redux/persistState';
+import { getInitials } from '@/utils/getInitials';
+
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
@@ -123,7 +125,7 @@ export function TopBar() {
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" />
                 <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                  {user.user.first_name[0]+user.user.last_name[0]}
+                  {getInitials(user.user)}
                 </AvatarFallback>
               </Avatar>
             </Button>
