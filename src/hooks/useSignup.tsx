@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { signUpUser } from '../api/auth';
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from './use-toast';

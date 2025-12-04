@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { cn } from "@/lib/utils"
 
 function Skeleton({

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { storage } from "@/utils/localStorage";
 import { User } from "@/utils/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";

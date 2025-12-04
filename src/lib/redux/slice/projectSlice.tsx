@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Message, ProjectData } from "@/utils/types";
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
@@ -38,7 +39,7 @@ const projectSlice = createSlice({
             if (project) {
                 // project.conversation.push(message);
             } else {
-                console.warn(`No project found with uid: ${uid}`);
+                logger.warn(`No project found with uid: ${uid}`);
             }
         },
         getAllProject:(state,action:PayloadAction<ProjectData[]>)=>{

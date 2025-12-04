@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 export const getFileReaderUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

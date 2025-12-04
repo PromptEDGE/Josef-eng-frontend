@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { setUser } from "@/lib/redux/slice/localStorageSlice";
 import { SignInFormType, User } from "@/utils/types";
 import { useMutation } from "@tanstack/react-query";
@@ -22,7 +23,7 @@ const useSignin = () => {
         dispatch(setUser(data));
         // Store only user details in user slice
         dispatch(getUser(data.user));
-        console.log(data)
+        logger.debug(data)
         navigate("/")
         toast({
             title: "SignIn successful",

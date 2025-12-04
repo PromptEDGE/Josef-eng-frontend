@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { UserDetail } from "./types";
 
 export function getInitials(user?: UserDetail | null): string {

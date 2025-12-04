@@ -1,100 +1,66 @@
+import { logger } from "@/utils/logger";
 import { SignInFormType, SignupFormType, User } from '@/utils/types';
-import axios from 'axios';
 import apiClient from '@/api/client';
-const url = import.meta.env.VITE_BACKEND_URL as string;
-export const signUpUser = async ({ email, password, firstName: first_name, lastName:last_name }:SignupFormType) => {
+
+export const signUpUser = async ({ email, password, firstName: first_name, lastName: last_name }: SignupFormType) => {
   try {
-    const response = await axios.post(
-      `${url}/api/v1/auth/signup`,
+    const response = await apiClient.post(
+      '/api/v1/auth/signup',
       {
         email,
         password,
         first_name,
         last_name
-      },
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
       }
     );
     return response.data;
-  } catch (error) {
-    console.error('Signup failed:', error.response?.data || error.message);
+  } catch (error: any) {
     throw error.response?.data || error.message;
   }
 };
-export const signInUser = async ({ email, password }:SignInFormType): Promise<User> => {
+
+export const signInUser = async ({ email, password }: SignInFormType): Promise<User> => {
   try {
-    const response = await axios.post(
-      `${url}/api/v1/auth/signin`,
+    const response = await apiClient.post(
+      '/api/v1/auth/signin',
       {
         email,
         password
-      },
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
       }
     );
     return response.data;
   } catch (error) {
-    console.error('Signin failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
-export const forgotPassword = async ({email, access}:{email:string,access:string}) => {
+export const signOutUser = async () => {
   try {
-    const response = await axios.post(
-      `${url}/api/v1/auth/forgot-password`,
-      {
-        email
-      },
-      {
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${access}`
-        }
-      }
-    );
-
+    const response = await apiClient.post('/api/v1/auth/signout');
     return response.data;
-  } catch (error) {
-    console.error("Error:", error.response?.data || error.message);
+  } catch (error: any) {
+    throw error.response?.data || error.message;
   }
 };
 
-export async function getUser(token: string) {
+export const forgotPassword = async ({ email }: { email: string }) => {
   try {
-    if (!token) throw new Error("UnAuthorized");
-    const response = await apiClient.get(`/api/v1/auth/me`);
-    return response.data;
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    throw error;
-  }
-}
-
-export async function refreshAccessToken(refresh_token: string) {
-  try {
-    const response = await axios.post(
-      `${url}/api/v1/auth/refresh`,
-      { refresh_token },
-      {
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      }
+    const response = await apiClient.post(
+      '/api/v1/auth/forgot-password',
+      { email }
     );
-    return response.data as { access_token: string; refresh_token?: string };
-  } catch (error) {
-    console.error('Refresh token failed:', error.response?.data || error.message);
-    throw error;
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || error.message;
+  }
+};
+
+export async function getUser() {
+  try {
+    // Cookie automatically attached by apiClient (withCredentials: true)
+    const response = await apiClient.get('/api/v1/auth/me');
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || error.message;
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { sendMessageToProject, UploadedFileData } from "@/api/chat";
 import { useMutation } from "@tanstack/react-query";
 

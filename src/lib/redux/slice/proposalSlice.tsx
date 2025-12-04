@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Proposal } from "@/utils/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { jsPDF } from "jspdf";

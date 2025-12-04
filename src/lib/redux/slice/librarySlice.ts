@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { LibraryItem } from "@/utils/types";
 import { createSlice } from "@reduxjs/toolkit"
 import type { PayloadAction } from "@reduxjs/toolkit";
@@ -30,7 +31,7 @@ const librarySlice = createSlice({
                 }));
                 state.library = parsed;
             } catch (error) {
-                console.error('Failed to load library from storage', error);
+                logger.error('Failed to load library from storage', error);
             }
 
         },

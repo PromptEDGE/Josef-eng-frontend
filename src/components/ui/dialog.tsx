@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"

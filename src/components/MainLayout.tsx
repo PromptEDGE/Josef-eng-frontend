@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Dashboard } from './Dashboard';

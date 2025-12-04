@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { configureStore } from "@reduxjs/toolkit";
 import project from "./slice/projectSlice";
 import projectDetail from "./slice/projectDetailSlice";

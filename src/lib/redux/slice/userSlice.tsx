@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { UserDetail } from "@/utils/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface User{

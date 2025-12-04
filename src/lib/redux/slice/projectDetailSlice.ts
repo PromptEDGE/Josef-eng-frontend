@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Message, ProjectData } from "@/utils/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 

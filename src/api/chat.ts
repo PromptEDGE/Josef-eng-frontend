@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import apiClient from "@/api/client";
 
 export interface UploadedFileData {
@@ -16,7 +17,11 @@ export const sendMessageToProject = async ({
   uploadedFiles?: UploadedFileData[];
 }) => {
   try {
-    if(!id) return
+    if (!id) {
+      logger.error("Project ID is required");
+      throw new Error("Project ID is required");
+    }
+
     const response = await apiClient.post(
       `/api/v1/projects/${id}/chat`,
       {
@@ -26,11 +31,8 @@ export const sendMessageToProject = async ({
     );
 
     return response.data;
-  } catch (error) {
-    console.error(
-      "Error sending message to project:",
-      error.response?.data || error.message
-    );
+  } catch (error: any) {
+    logger.error("Error sending message to project", error);
     throw error;
   }
 };

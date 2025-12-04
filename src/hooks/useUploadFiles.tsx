@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MessageType,
@@ -178,7 +179,7 @@ const useUploadFiles = () => {
                      error: errorMessageFrom(error),
                      completedAt: Date.now(),
                    });
-                   console.log(error)
+                   logger.debug(error)
                  }
                })
             },1000)

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 // import VideoBg from "../assets/Generated File August 19, 2025 - 4_26AM.mp4"
 import ImageBg from "../assets/authImage.png"

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';

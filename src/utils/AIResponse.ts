@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
   const generateAIResponse = (input: string): string => {
     const lower = input.toLowerCase();
     

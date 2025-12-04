@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { RootState } from "@/lib/redux/store";
 import { ReactNode, useEffect } from "react";
 import { useSelector } from "react-redux";
