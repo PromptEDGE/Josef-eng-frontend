@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "./use-toast";
 import { signInUser } from "@/api/auth";
 import { getUser } from "@/lib/redux/slice/userSlice";
-import { setTokens } from "@/utils/authTokens";
 import { isAxiosError } from "axios";
 
 const useSignin = () => {
@@ -17,8 +16,7 @@ const useSignin = () => {
     const {mutate, data, isPending} = useMutation<User, any, SignInFormType>({
         mutationFn: (form:SignInFormType) => signInUser(form),
         onSuccess: (data) => {
-        // Persist tokens for axios interceptors
-        setTokens({ accessToken: data.access_token, refreshToken: data.refresh_token });
+        // Tokens are now stored in httpOnly cookies by the backend
         // Persist entire auth payload if needed elsewhere
         dispatch(setUser(data));
         // Store only user details in user slice
@@ -27,7 +25,7 @@ const useSignin = () => {
         navigate("/")
         toast({
             title: "SignIn successful",
-            description: "You have successfully signed up.",
+            description: "You have successfully signed in.",
         });
         },
         onError: (error) => {
