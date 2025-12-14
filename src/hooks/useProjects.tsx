@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { getProjects } from "@/api/project";
 import { getAllProject } from "@/lib/redux/slice/projectSlice";
 import { RootState } from "@/lib/redux/store";

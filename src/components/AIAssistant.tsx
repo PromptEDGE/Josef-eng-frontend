@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState, useRef, useEffect, useCallback, ChangeEvent, ReactNode, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -241,7 +242,7 @@ export function AIAssistant() {
           setUploadedFilesData([]);
         },
         onError: (error) => {
-          console.log(error);
+          logger.debug(error);
           toast({
             title: 'Unable to send message',
             description: 'Please try again in a moment.',
@@ -314,7 +315,7 @@ export function AIAssistant() {
     };
 
     recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event);
+      logger.error('Speech recognition error:', event);
       setIsListening(false);
       const description = event?.error === 'not-allowed'
         ? 'Microphone access was denied. Please enable it in your browser settings.'
@@ -385,7 +386,7 @@ export function AIAssistant() {
           description: 'Start speaking your question.',
         });
       } catch (error) {
-        console.error('Failed to start speech recognition:', error);
+        logger.error('Failed to start speech recognition:', error);
         toast({
           title: 'Unable to start voice input',
           description: 'Microphone may be in use or permission was denied.',
@@ -423,10 +424,10 @@ export function AIAssistant() {
   //         {
   //           onSuccess: async (data)=>{
   //             const res:ResponseData = data
-  //             console.log(res)
+  //             logger.debug(res)
   //           },
   //           onError: (error)=>{
-  //             console.log(error)
+  //             logger.debug(error)
   //             setPreview("")
   //             toast({
   //               title: "Error",

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useEffect, useState } from 'react';
 import {motion,AnimatePresence} from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import {
     listDocuments,
     DocumentRecord,
@@ -77,7 +78,7 @@ const useGetLibrary = () => {
                 if (result.status === "fulfilled") {
                     downloadMap.set(docs[index].id, result.value);
                 } else {
-                    console.error(
+                    logger.error(
                         "Failed to fetch download URL",
                         { documentId: docs[index].id, error: result.reason }
                     );

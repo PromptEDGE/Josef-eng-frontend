@@ -1,29 +1,53 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders } from 'axios';
-import { getAccessToken, getRefreshToken, setTokens, clearTokens } from '@/utils/authTokens';
+import { logger } from "@/utils/logger";
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 
 const baseURL = import.meta.env.VITE_BACKEND_URL as string;
 
-// Create a single Axios instance for the app
+// Create a single Axios instance for the app with cookie support
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-  withCredentials: false,
+  withCredentials: true, // CRITICAL: Enable credentials for httpOnly cookies
 });
 
-let isRefreshing = false;
-let pendingQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+// CSRF token management
+let csrfToken: string | null = null;
 
-// Attach access token if present before every request
-apiClient.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
+async function getCsrfToken(): Promise<string> {
+  if (csrfToken) return csrfToken;
+
+  try {
+    const response = await axios.get(`${baseURL}/api/v1/auth/csrf-token`, {
+      withCredentials: true,
+    });
+    csrfToken = response.data.token;
+    return csrfToken;
+  } catch (error) {
+    throw new Error('Failed to fetch CSRF token');
   }
+}
+
+// Request interceptor: Attach CSRF token to state-changing requests
+apiClient.interceptors.request.use(async (config) => {
+  const method = config.method?.toLowerCase();
+
+  // Attach CSRF token to POST/PUT/PATCH/DELETE requests
+  if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+    try {
+      const token = await getCsrfToken();
+      config.headers['X-CSRF-Token'] = token;
+    } catch (error) {
+      // If CSRF token fetch fails, continue without it (will fail on backend)
+    }
+  }
+
   return config;
 });
 
-// Response: refresh on auth failure and retry
+let isRefreshing = false;
+let pendingQueue: Array<{ resolve: (value: any) => void; reject: (err: any) => void }> = [];
+
+// Response interceptor: Auto-refresh on 401 errors
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<any>) => {
@@ -31,44 +55,22 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const url = originalRequest.url || '';
 
-    // Helpful in dev: see what we got back
-    console.debug('API error', { status, url, data: error.response?.data });
-
     // Do NOT intercept the refresh call itself
     const isRefreshCall = url?.includes('/api/v1/auth/refresh');
 
-    // Detect “expired” both by HTTP status and common API error shapes
-    const data = error.response as any;
-    const looksExpired =
-      status === 401 ||
-      status === 403 ||
-      status === 419 ||
-      status === 498 ||
-      error?.code === "ERR_BAD_REQUEST" ||
-      data?.detail
-        ?.toString?.()
-        .toLowerCase?.()
-        .includes("Invalid or expired token");
+    // Detect auth errors (401/403)
+    const isAuthError = status === 401 || status === 403;
 
-    if (!isRefreshCall && looksExpired && !originalRequest._retry) {
-      const refresh = getRefreshToken();
-      if (!refresh) {
-        clearTokens();
-        return Promise.reject(error);
-      }
-
+    if (!isRefreshCall && isAuthError && !originalRequest._retry) {
       // If a refresh is already in-flight, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           pendingQueue.push({
-            resolve: (newToken: string) => {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              }
+            resolve: () => {
               originalRequest._retry = true;
               resolve(apiClient(originalRequest));
             },
-            reject, // important: actually reject if refresh fails
+            reject,
           });
         });
       }
@@ -78,34 +80,26 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const resp = await axios.post(
+        // Call refresh endpoint (reads refresh_token from cookie, sets new access_token cookie)
+        await axios.post(
           `${baseURL}/api/v1/auth/refresh`,
-          { refresh_token: refresh },
-          { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
+          {},
+          { withCredentials: true }
         );
 
-        // Adjust these keys to match your backend response
-        const newAccess: string = resp.data?.access_token || resp.data?.access || resp.data?.token;
-        const newRefresh: string = resp.data?.refresh_token || resp.data?.refresh || refresh;
-        if (!newAccess) throw new Error('No access token in refresh response');
-
-        setTokens({ accessToken: newAccess, refreshToken: newRefresh });
-
         // Flush success to all queued requests
-        pendingQueue.forEach((p) => p.resolve(newAccess));
+        pendingQueue.forEach((p) => p.resolve(undefined));
         pendingQueue = [];
 
-        // Retry the original request with new token
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-        }
+        // Retry the original request (cookie automatically attached)
         return apiClient(originalRequest);
       } catch (refreshErr) {
         // Flush failure to all queued requests
         pendingQueue.forEach((p) => p.reject(refreshErr));
         pendingQueue = [];
 
-        clearTokens();
+        // Redirect to signin on refresh failure
+        window.location.href = '/signin';
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import apiClient from "@/api/client";
 
 export type UploadProgress = {

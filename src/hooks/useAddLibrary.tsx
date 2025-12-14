@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { getFile } from "@/lib/redux/slice/librarySlice";
 import { addToLibrary } from "@/api/project";
 import { LibraryItem } from "@/utils/types";
@@ -12,12 +13,12 @@ const useGetDocument = (library:LibraryItem) => {
     const { data, isPending, isError,  isSuccess } = useMutation({
         mutationFn: ({library,access}:{library:LibraryItem,access:string}) => addToLibrary({library,access}),
         onSuccess: (data) => {
-            console.log(data);
+            logger.debug(data);
             // add library slice in redux
             dispatch(getFile(data))
         },
         onError: (error) => {
-            console.error("Error fetching document:", error);
+            logger.error("Error fetching document:", error);
         }
     })
     useEffect(()=>{

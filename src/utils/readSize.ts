@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 export const readableSize = (size: number) => {
       const units = ['B', 'KB', 'MB', 'GB'];
       let i = 0;

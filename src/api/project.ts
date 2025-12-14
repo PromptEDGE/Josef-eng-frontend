@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { CreateProjectType, ProjectData } from "@/utils/types";
 import apiClient from "@/api/client";
 export const createProject = async ({
@@ -31,7 +32,7 @@ export const createProject = async ({
 
     return response.data;
   } catch (error) {
-    console.error('Project creation failed:', error.response?.data || error.message);
+    logger.error('Project creation failed:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -45,7 +46,7 @@ export const getProjects = async () => {
 
     return response.data;
   } catch (error) {
-    console.error(
+    logger.error(
       "Error fetching projects:",
       error.response?.data || error.message
     );

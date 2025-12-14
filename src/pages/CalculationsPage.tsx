@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -153,7 +154,7 @@ export default function CalculationsPage() {
   };
 
   const handleRunCalculation = () => {
-    console.log('Running calculation with data:', formData);
+    logger.debug('Running calculation with data:', formData);
     // Here you would send the calculation request
   };
 

@@ -1,0 +1,47 @@
+import { logger } from "@/utils/logger";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getUser, signInUser, signOutUser } from '@/api/auth';
+import { User, SignInFormType } from '@/utils/types';
+
+export function useAuth() {
+  const queryClient = useQueryClient();
+
+  const { data: user, isLoading, error } = useQuery<User | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
+      try {
+        return await getUser(); // Server validates httpOnly cookie
+      } catch {
+        return null; // Not authenticated
+      }
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // Previously called cacheTime
+  });
+
+  const signIn = useMutation({
+    mutationFn: signInUser,
+    onSuccess: (userData) => {
+      queryClient.setQueryData(['auth', 'me'], userData);
+    },
+  });
+
+  const signOut = useMutation({
+    mutationFn: signOutUser,
+    onSuccess: () => {
+      queryClient.setQueryData(['auth', 'me'], null);
+      queryClient.clear(); // Clear all cached data
+      window.location.href = '/signin';
+    },
+  });
+
+  return {
+    user: user ?? null,
+    isAuthenticated: !!user,
+    isLoading,
+    isError: !!error,
+    signIn,
+    signOut,
+  };
+}

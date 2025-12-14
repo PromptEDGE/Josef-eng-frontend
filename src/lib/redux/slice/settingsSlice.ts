@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 
 export type ThemePreference = "light" | "dark" | "system";

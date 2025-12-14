@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 const PERSIST_KEY = "app:state";
 
 const isBrowser = typeof window !== "undefined" && typeof localStorage !== "undefined";
@@ -31,7 +32,7 @@ export const loadPersistedState = <TState = unknown>(): TState | undefined => {
     if (!serializedState) return undefined;
     return JSON.parse(serializedState, reviver) as TState;
   } catch (error) {
-    console.warn("Failed to load persisted state", error);
+    logger.warn("Failed to load persisted state", error);
     return undefined;
   }
 };
@@ -42,7 +43,7 @@ export const savePersistedState = (state: unknown) => {
     const serializedState = JSON.stringify(state as Serializable, replacer);
     localStorage.setItem(PERSIST_KEY, serializedState);
   } catch (error) {
-    console.warn("Failed to persist state", error);
+    logger.warn("Failed to persist state", error);
   }
 };
 
@@ -51,7 +52,7 @@ export const clearPersistedState = () => {
   try {
     localStorage.removeItem(PERSIST_KEY);
   } catch (error) {
-    console.warn("Failed to clear persisted state", error);
+    logger.warn("Failed to clear persisted state", error);
   }
 };
 

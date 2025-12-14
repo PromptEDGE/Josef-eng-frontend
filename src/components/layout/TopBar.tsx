@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { clearTokens } from '@/utils/authTokens';
+import { signOutUser } from '@/api/auth';
 import { clearUser as clearStoredUser } from '@/lib/redux/slice/localStorageSlice';
 import { clearUser as clearUserDetails } from '@/lib/redux/slice/userSlice';
 import { clearPersistedState } from '@/lib/redux/persistState';
@@ -44,15 +45,20 @@ export function TopBar() {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
   };
-  const handleLogout = () => {
-    // Clear tokens and user data, redirect to signin
-    clearTokens();
-    localStorage.removeItem('auth');
-    // Reset slices
-    dispatch(clearStoredUser());
-    dispatch(clearUserDetails());
-    clearPersistedState();
-    window.location.href = '/signin';
+  const handleLogout = async () => {
+    try {
+      // Call backend to clear httpOnly cookies
+      await signOutUser();
+    } catch (error) {
+      logger.error('Logout error', error);
+    } finally {
+      // Clear local state regardless of API result
+      localStorage.removeItem('auth');
+      dispatch(clearStoredUser());
+      dispatch(clearUserDetails());
+      clearPersistedState();
+      window.location.href = '/signin';
+    }
   };
   return (
     <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center justify-between gap-4">

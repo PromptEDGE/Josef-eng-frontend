@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { CreateProjectType } from "@/utils/types";
 import { useToast } from "./use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -24,7 +25,7 @@ const useCreateProject = () => {
         },
         onError: (error) => {
             if(isAxiosError(error)){
-                console.log(error)
+                logger.debug(error)
                 toast({
                     title: "Error",
                     description: error.response?.data.detail,

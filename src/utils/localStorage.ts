@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 export const storage = (key: string,value?:any): any =>{
     if(value){
         localStorage.setItem(key, JSON.stringify(value));

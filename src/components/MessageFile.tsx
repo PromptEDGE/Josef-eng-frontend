@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Loader, X } from "lucide-react"
 
  const MessageFile = ({message,uploading}:{message: string,uploading?:boolean})=>{

@@ -1,6 +1,7 @@
+import { logger } from "@/utils/logger";
 export const handleDownload = (fileUrl: string | undefined, fileName: string) => {
   if (!fileUrl) {
-    console.warn('No file URL provided for download');
+    logger.warn('No file URL provided for download');
     return;
   }
 
