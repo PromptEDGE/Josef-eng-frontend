@@ -98,8 +98,9 @@ apiClient.interceptors.response.use(
         pendingQueue.forEach((p) => p.reject(refreshErr));
         pendingQueue = [];
 
-        // Redirect to signin on refresh failure
-        window.location.href = '/signin';
+        // Don't hard redirect here - let ProtectedRoute handle it
+        // The 401 error will bubble up to useAuth(), which will
+        // set isAuthenticated=false, triggering ProtectedRoute redirect
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
