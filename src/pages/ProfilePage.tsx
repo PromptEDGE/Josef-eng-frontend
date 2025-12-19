@@ -19,18 +19,19 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { RootState } from '@/lib/redux/store';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ProfilePage() {
+  const { user: authUser } = useAuth(); // Get user from TanStack Query (source of truth)
   const profile = useSelector((state: RootState) => state.settings.profile);
   const preferences = useSelector((state: RootState) => state.settings.preferences);
   const security = useSelector((state: RootState) => state.settings.security);
-  const user = useSelector((state: RootState) => state.localStorage.user);
 
   const initials = useMemo(() => {
-    const first = profile.firstName?.[0] ?? '';
-    const last = profile.lastName?.[0] ?? '';
+    const first = authUser?.profile?.first_name?.[0] ?? profile.firstName?.[0] ?? '';
+    const last = authUser?.profile?.last_name?.[0] ?? profile.lastName?.[0] ?? '';
     return `${first}${last}`.trim() || 'HV';
-  }, [profile.firstName, profile.lastName]);
+  }, [authUser?.profile?.first_name, authUser?.profile?.last_name, profile.firstName, profile.lastName]);
 
   return (
     <div className="p-6 space-y-6">
@@ -61,41 +62,54 @@ export default function ProfilePage() {
               </Avatar>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">
-                  {profile.firstName} {profile.lastName}
+                  {authUser?.profile?.first_name || profile.firstName} {authUser?.profile?.last_name || profile.lastName}
                 </h2>
-                <p className="text-sm text-muted-foreground">{profile.title}</p>
+                {(authUser?.profile?.job_title || profile.title) && (
+                  <p className="text-sm text-muted-foreground">{authUser?.profile?.job_title || profile.title}</p>
+                )}
               </div>
             </div>
 
             <Separator />
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.email}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.phone}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Building className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.company}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.location}</span>
-              </div>
+              {(authUser?.email || profile.email) && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  <span>{authUser?.email || profile.email}</span>
+                </div>
+              )}
+              {profile.phone && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  <span>{profile.phone}</span>
+                </div>
+              )}
+              {profile.company && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Building className="w-4 h-4 text-muted-foreground" />
+                  <span>{profile.company}</span>
+                </div>
+              )}
+              {profile.location && (
+                <div className="flex items-center gap-3 text-sm">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span>{profile.location}</span>
+                </div>
+              )}
             </div>
 
-            <Separator />
-
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Bio</h3>
-              <p className="text-sm text-foreground leading-relaxed">
-                {profile.bio}
-              </p>
-            </div>
+            {profile.bio && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Bio</h3>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {profile.bio}
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -162,14 +176,18 @@ export default function ProfilePage() {
               <Separator />
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Account</p>
-                <div className="flex items-center gap-3 text-sm">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <span>{user?.user.email ?? profile.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Briefcase className="w-4 h-4 text-muted-foreground" />
-                  <span>{profile.title}</span>
-                </div>
+                {(authUser?.email || profile.email) && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <span>{authUser?.email || profile.email}</span>
+                  </div>
+                )}
+                {(authUser?.profile?.job_title || profile.title) && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Briefcase className="w-4 h-4 text-muted-foreground" />
+                    <span>{authUser?.profile?.job_title || profile.title}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -182,14 +200,18 @@ export default function ProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs uppercase tracking-wide">Company</p>
-                <p className="text-base font-medium text-foreground">{profile.company}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs uppercase tracking-wide">Location</p>
-                <p className="text-base font-medium text-foreground">{profile.location}</p>
-              </div>
+              {profile.company && (
+                <div>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wide">Company</p>
+                  <p className="text-base font-medium text-foreground">{profile.company}</p>
+                </div>
+              )}
+              {profile.location && (
+                <div>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wide">Location</p>
+                  <p className="text-base font-medium text-foreground">{profile.location}</p>
+                </div>
+              )}
               <div>
                 <p className="text-muted-foreground text-xs uppercase tracking-wide">Preferred Theme</p>
                 <p className="text-base font-medium text-foreground capitalize">{preferences.theme}</p>

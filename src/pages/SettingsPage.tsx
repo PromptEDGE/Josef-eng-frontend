@@ -1,6 +1,9 @@
 import { logger } from "@/utils/logger";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAuth } from '@/hooks/useAuth';
+import { updateProfile as updateProfileAPI } from '@/api/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,20 +55,35 @@ import { useToast } from '@/hooks/use-toast';
 export default function SettingsPage() {
   const dispatch = useDispatch();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user: authUser } = useAuth(); // Get user from TanStack Query (source of truth)
 
   const profileState = useSelector((state: RootState) => state.settings.profile);
   const preferences = useSelector((state: RootState) => state.settings.preferences);
   const security = useSelector((state: RootState) => state.settings.security);
 
-  const [profileForm, setProfileForm] = useState(profileState);
+  // Initialize form with authUser data, fallback to Redux profile
+  const initialFormData = useMemo(() => ({
+    firstName: authUser?.profile?.first_name || profileState.firstName || '',
+    lastName: authUser?.profile?.last_name || profileState.lastName || '',
+    email: authUser?.email || profileState.email || '',
+    phone: profileState.phone || '',
+    company: profileState.company || '',
+    title: authUser?.profile?.job_title || profileState.title || '',
+    location: profileState.location || '',
+    bio: profileState.bio || '',
+    avatarUrl: profileState.avatarUrl || undefined,
+  }), [authUser, profileState]);
+
+  const [profileForm, setProfileForm] = useState(initialFormData);
   const [showPassword, setShowPassword] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(profileState.avatarUrl);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(initialFormData.avatarUrl);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setProfileForm(profileState);
-    setAvatarPreview(profileState.avatarUrl);
-  }, [profileState]);
+    setProfileForm(initialFormData);
+    setAvatarPreview(initialFormData.avatarUrl);
+  }, [initialFormData]);
 
   const profileInitials = useMemo(() => {
     const first = profileForm.firstName?.[0] ?? '';
@@ -110,12 +128,54 @@ export default function SettingsPage() {
     });
   };
 
-  const handleSaveProfile = () => {
-    dispatch(updateProfile(profileForm));
-    toast({
-      title: 'Profile saved',
-      description: 'Your profile information has been updated.',
-    });
+  const handleSaveProfile = async () => {
+    try {
+      // Prepare data for backend API
+      const updateData = {
+        first_name: profileForm.firstName || undefined,
+        last_name: profileForm.lastName || undefined,
+        job_title: profileForm.title || undefined,
+        phone: profileForm.phone || undefined,
+        company: profileForm.company || undefined,
+        location: profileForm.location || undefined,
+        bio: profileForm.bio || undefined,
+      };
+
+      // Remove undefined values
+      const cleanedData = Object.fromEntries(
+        Object.entries(updateData).filter(([_, v]) => v !== undefined)
+      );
+
+      // Call backend API
+      const updatedProfile = await updateProfileAPI(cleanedData);
+
+      // Update TanStack Query cache with new profile data
+      if (authUser) {
+        queryClient.setQueryData(['auth', 'me'], {
+          ...authUser,
+          profile: {
+            ...authUser.profile,
+            first_name: updatedProfile.first_name,
+            last_name: updatedProfile.last_name,
+            job_title: updatedProfile.job_title,
+          }
+        });
+      }
+
+      // Also update Redux for backward compatibility
+      dispatch(updateProfile(profileForm));
+
+      toast({
+        title: 'Profile saved',
+        description: 'Your profile information has been updated.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save failed',
+        description: error.message || 'Failed to update profile.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handlePreferenceChange = (field: keyof typeof preferences, value: boolean | string) => {

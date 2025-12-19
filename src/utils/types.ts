@@ -28,7 +28,7 @@ export type CreateProjectType = {
   location: string,
   description: string,
   systems: string[],
-  access_token?:string
+  // access_token removed - authentication now uses httpOnly cookies
 }
 export interface Message {
   id: string;
@@ -113,8 +113,10 @@ export interface UserDetail {
   updated_at: string; // ISO date string
 };
 export interface User  {
-  access_token: string;
-  refresh_token: string;
-  token_type: string; // usually "bearer"
+  // DEPRECATED: Tokens are now stored in httpOnly cookies
+  // These fields are kept for backward compatibility with old signin responses
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string; // usually "bearer"
   user: UserDetail;
 }

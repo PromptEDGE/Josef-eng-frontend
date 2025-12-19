@@ -6,7 +6,7 @@ import { forgotPassword } from "@/api/auth";
 const useForgottenPassword = () => {
     const { toast } = useToast()
     const {mutate,isPending,isSuccess,error} = useMutation({
-        mutationFn: ({email, access}:{email:string,access: string})=> forgotPassword({email, access}),
+        mutationFn: ({email}:{email:string})=> forgotPassword({email}),
         onSuccess: () => {
             toast({
                 title: "Success",

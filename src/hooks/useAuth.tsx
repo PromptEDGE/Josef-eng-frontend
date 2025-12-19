@@ -2,14 +2,19 @@ import { logger } from "@/utils/logger";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUser, signInUser, signOutUser } from '@/api/auth';
 import { User, SignInFormType } from '@/utils/types';
-import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setUser } from '@/lib/redux/slice/localStorageSlice';
 import { clearUser } from '@/lib/redux/slice/localStorageSlice';
+import { useLocation } from 'react-router-dom';
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const location = useLocation();
+
+  // Don't query auth on signin/signup pages to prevent race conditions
+  const isAuthPage = ['/signin', '/signup', '/reset-password', '/forgot-password'].some(
+    page => location.pathname.includes(page)
+  );
 
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ['auth', 'me'],
@@ -20,6 +25,7 @@ export function useAuth() {
         return null; // Not authenticated
       }
     },
+    enabled: !isAuthPage, // Only run query when NOT on auth pages
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // Previously called cacheTime
@@ -42,16 +48,8 @@ export function useAuth() {
     },
   });
 
-  // Sync user data to Redux when it changes
-  useEffect(() => {
-    if (user) {
-      // User is authenticated - sync to Redux
-      dispatch(setUser({ user }));
-    } else if (user === null && !isLoading) {
-      // User is explicitly null (not authenticated) and not loading - clear Redux
-      dispatch(clearUser());
-    }
-  }, [user, isLoading, dispatch]);
+  // NOTE: Redux sync removed from here - useSignin handles it on login
+  // This prevents conflicts between multiple state update sources
 
   return {
     user: user ?? null,

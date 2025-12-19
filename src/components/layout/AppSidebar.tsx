@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/redux/store';
+import { useAuth } from '@/hooks/useAuth';
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: Home },
@@ -50,7 +51,7 @@ const accountNavItems = [
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
-  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const { user: authUser } = useAuth(); // Get user from TanStack Query (source of truth)
   const profile = useSelector((state:RootState)=>state.settings.profile)
   const library = useSelector((state:RootState)=>state.library.library)
   const proposal = useSelector((state:RootState)=>state.proposal.proposal)
@@ -240,7 +241,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* User Profile */}
-            {user ? (
+            {authUser ? (
               <>
               {!collapsed && (
                 <SidebarFooter className="p-4 border-t border-border">
@@ -248,12 +249,17 @@ export function AppSidebar() {
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={profile.avatarUrl} />
                       <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                        {(profile.firstName?.[0] ?? user?.user.first_name?.[0] ?? 'H') + (profile.lastName?.[0] ?? user?.user.last_name?.[0] ?? 'V')}
+                        {(authUser?.profile?.first_name?.[0] ?? profile.firstName?.[0] ?? authUser?.email?.[0]?.toUpperCase() ?? 'U')}
+                        {(authUser?.profile?.last_name?.[0] ?? profile.lastName?.[0] ?? '')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-medium text-foreground">{profile.firstName} {profile.lastName}</p>
-                      <p className="text-xs text-muted-foreground">{profile.title || 'HVAC Engineer'}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {authUser?.profile?.first_name || profile.firstName} {authUser?.profile?.last_name || profile.lastName}
+                      </p>
+                      {(authUser?.profile?.job_title || profile.title) && (
+                        <p className="text-xs text-muted-foreground">{authUser?.profile?.job_title || profile.title}</p>
+                      )}
                     </div>
                     <div className="w-2 h-2 bg-success rounded-full" aria-hidden />
                   </Link>

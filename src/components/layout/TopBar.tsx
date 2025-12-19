@@ -31,11 +31,12 @@ import { clearUser as clearStoredUser } from '@/lib/redux/slice/localStorageSlic
 import { clearUser as clearUserDetails } from '@/lib/redux/slice/userSlice';
 import { clearPersistedState } from '@/lib/redux/persistState';
 import { getInitials } from '@/utils/getInitials';
+import { useAuth } from '@/hooks/useAuth';
 
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
-  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const { user: authUser } = useAuth(); // Get user from TanStack Query
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
@@ -88,7 +89,7 @@ export function TopBar() {
         </Button> */}
 
         {/* Notifications */}
-       {user&& <DropdownMenu>
+       {authUser && <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 relative">
               <Bell className="w-4 h-4" />
@@ -125,13 +126,14 @@ export function TopBar() {
         </DropdownMenu>}
 
         {/* User Menu */}
-        {user?<DropdownMenu>
+        {authUser ? <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" />
                 <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                  {getInitials(user.user)}
+                  {authUser?.profile?.first_name?.[0]?.toUpperCase() || authUser?.email?.[0]?.toUpperCase() || 'U'}
+                  {authUser?.profile?.last_name?.[0]?.toUpperCase() || ''}
                 </AvatarFallback>
               </Avatar>
             </Button>

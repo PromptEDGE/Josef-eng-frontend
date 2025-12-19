@@ -18,9 +18,9 @@ const userSlice = createSlice({
             state.user = null
         },
         loadUser: (state) => {
-            // Save user data to localStorage
-            // Keeping this reducer for compatibility; prefer reading from API on app load
-            state.user = state.user || null
+            // DEPRECATED: No-op to prevent infinite loops
+            // State is now hydrated from preloadedState via persistState.ts
+            // This reducer exists for backwards compatibility only
           },
     }
 })

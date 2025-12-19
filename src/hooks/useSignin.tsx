@@ -1,27 +1,25 @@
 import { logger } from "@/utils/logger";
-import { setUser } from "@/lib/redux/slice/localStorageSlice";
 import { SignInFormType, User } from "@/utils/types";
-import { useMutation } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "./use-toast";
 import { signInUser } from "@/api/auth";
-import { getUser } from "@/lib/redux/slice/userSlice";
 import { isAxiosError } from "axios";
 
 const useSignin = () => {
     const navigate = useNavigate()
-    const dispatch = useDispatch()
+    const queryClient = useQueryClient()
     const { toast } = useToast();
     const {mutate, data, isPending} = useMutation<User, any, SignInFormType>({
         mutationFn: (form:SignInFormType) => signInUser(form),
         onSuccess: (data) => {
         // Tokens are now stored in httpOnly cookies by the backend
-        // Persist entire auth payload if needed elsewhere
-        dispatch(setUser(data));
-        // Store only user details in user slice
-        dispatch(getUser(data.user));
-        logger.debug(data)
+        // Populate TanStack Query cache (source of truth for auth)
+        queryClient.setQueryData(['auth', 'me'], data.user);
+
+        // SUCCESS: Redux dispatches removed - they were causing infinite loops
+        // TanStack Query + httpOnly cookies handle all auth state
+
         navigate("/")
         toast({
             title: "SignIn successful",
@@ -41,7 +39,6 @@ const useSignin = () => {
                     description: error.message,
                     variant: "destructive",
                 });
-
             }
         }
     });

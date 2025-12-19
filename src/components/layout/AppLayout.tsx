@@ -6,11 +6,17 @@ import { AppSidebar } from '@/components/layout/AppSidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { useDispatch } from 'react-redux';
 import { loadUser } from '@/lib/redux/slice/localStorageSlice';
+import useProjects from '@/hooks/useProjects';
+import useGetLibrary from '@/hooks/useGetLibrary';
 
 export function AppLayout() {
   const dispatch = useDispatch();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const location = useLocation();
+
+  // Fetch projects and library data on mount (authenticated users only)
+  useProjects();
+  useGetLibrary();
   const pages:string[] = [
     '/signup',
     '/login',
@@ -26,10 +32,9 @@ export function AppLayout() {
     }
   }
 
-  // Load persisted Redux state on mount
-  useEffect(()=>{
-      dispatch(loadUser())
-    },[dispatch])
+  // REMOVED: loadUser() causes infinite loop when combined with store.subscribe()
+  // Auth state is now managed by TanStack Query (useAuth hook)
+  // Redux state is hydrated from preloadedState on initial store creation
   return (
     <SidebarProvider defaultOpen={!isSidebarCollapsed}>
       <div className="min-h-screen flex w-full bg-background">
