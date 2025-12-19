@@ -4,10 +4,17 @@ import { getUser, signInUser, signOutUser } from '@/api/auth';
 import { User, SignInFormType } from '@/utils/types';
 import { useDispatch } from 'react-redux';
 import { clearUser } from '@/lib/redux/slice/localStorageSlice';
+import { useLocation } from 'react-router-dom';
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const location = useLocation();
+
+  // Don't query auth on signin/signup pages to prevent race conditions
+  const isAuthPage = ['/signin', '/signup', '/reset-password', '/forgot-password'].some(
+    page => location.pathname.includes(page)
+  );
 
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ['auth', 'me'],
@@ -18,6 +25,7 @@ export function useAuth() {
         return null; // Not authenticated
       }
     },
+    enabled: !isAuthPage, // Only run query when NOT on auth pages
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // Previously called cacheTime

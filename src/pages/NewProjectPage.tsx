@@ -37,6 +37,7 @@ import { addActivity } from '@/lib/redux/slice/activitySlice';
 import { useToast } from '@/hooks/use-toast';
 import { RootState } from '@/lib/redux/store';
 import useCreateProject from '@/hooks/useCreateProject';
+import { useAuth } from '@/hooks/useAuth';
 
 
 
@@ -98,7 +99,7 @@ export default function NewProjectPage() {
   }
   const {mutate, data, isPending } = useCreateProject()
   const dispatch = useDispatch()
-  const user = useSelector((state:RootState)=>state.localStorage.user)
+  const { user: authUser } = useAuth(); // Get authenticated user from TanStack Query
   const { toast } = useToast();
   const [formData, setFormData] = useState<CollectInfo>(initialForm);
   // const [error,setError] = useState<boolean>(false)
@@ -147,18 +148,18 @@ export default function NewProjectPage() {
     })
       return 
     }
-    if(!user){
+    if(!authUser){
       toast({
         title: "sign in to continue",
         description: "sign in"
       })
       return
-    } 
+    }
     const projectData:CreateProjectType ={
       ...formData,
       startDate:  new Date(formData.startDate).toISOString().split('T')[0],
       endDate:  new Date(formData.endDate).toISOString().split('T')[0],
-      access_token: user.access_token
+      // access_token removed - httpOnly cookie is sent automatically by apiClient
     }
      await mutate(projectData);
     if(!data) {

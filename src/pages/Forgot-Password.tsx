@@ -9,15 +9,12 @@ import { cn } from "@/lib/utils";
 import ServicesCard from "@/components/ServiceCards";
 import { useMutation } from "@tanstack/react-query";
 import { forgotPassword } from "@/api/auth";
-import { useSelector } from "react-redux";
-import { RootState } from "@/lib/redux/store";
 import useForgottenPassword from "@/hooks/useForgottenPassword";
 import { NavLink } from "react-router-dom";
 
 
 export default function ForgotPasswordPage() {
 	const { mutate, isPending, errorMessage, success } = useForgottenPassword()
-	const user = useSelector((state: RootState) => state.localStorage.user);
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
 
@@ -36,7 +33,7 @@ export default function ForgotPasswordPage() {
 		const err = validateEmail(email);
 		setError(err);
 		if (!err) {
-			await mutate({ email, access: user?.access_token });
+			await mutate({ email });
 		}
 	};
 

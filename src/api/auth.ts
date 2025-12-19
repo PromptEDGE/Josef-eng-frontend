@@ -64,3 +64,28 @@ export async function getUser() {
     throw error.response?.data || error.message;
   }
 }
+
+export interface UpdateProfileData {
+  first_name?: string;
+  last_name?: string;
+  job_title?: string;
+  phone?: string;
+  company?: string;
+  location?: string;
+  bio?: string;
+  theme?: string;
+  language?: string;
+  timezone?: string;
+  notification_email?: boolean;
+  push?: boolean;
+  sound?: boolean;
+}
+
+export async function updateProfile(data: UpdateProfileData) {
+  try {
+    const response = await apiClient.put('/api/v1/auth/profile/update/', data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || error.message;
+  }
+}
