@@ -51,7 +51,7 @@ const accountNavItems = [
 
 export function AppSidebar() {
   const projects = useSelector((state:RootState)=>state.project.project)
-  const { user: authUser } = useAuth(); // Get user from TanStack Query (source of truth)
+  const { user: authUser, isLoading: authLoading } = useAuth(); // Get user from TanStack Query (source of truth)
   const profile = useSelector((state:RootState)=>state.settings.profile)
   const library = useSelector((state:RootState)=>state.library.library)
   const proposal = useSelector((state:RootState)=>state.proposal.proposal)
@@ -241,7 +241,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* User Profile */}
-            {authUser ? (
+            {!authLoading && authUser ? (
               <>
               {!collapsed && (
                 <SidebarFooter className="p-4 border-t border-border">
@@ -249,16 +249,16 @@ export function AppSidebar() {
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={profile.avatarUrl} />
                       <AvatarFallback className="bg-gradient-hero text-primary-foreground text-xs font-bold">
-                        {(authUser?.profile?.first_name?.[0] ?? profile.firstName?.[0] ?? authUser?.email?.[0]?.toUpperCase() ?? 'U')}
-                        {(authUser?.profile?.last_name?.[0] ?? profile.lastName?.[0] ?? '')}
+                        {(authUser?.profile?.first_name?.[0] ?? authUser?.email?.[0]?.toUpperCase() ?? 'U')}
+                        {(authUser?.profile?.last_name?.[0] ?? '')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-medium text-foreground">
-                        {authUser?.profile?.first_name || profile.firstName} {authUser?.profile?.last_name || profile.lastName}
+                        {authUser?.profile?.first_name || authUser?.email?.split('@')[0]} {authUser?.profile?.last_name || ''}
                       </p>
-                      {(authUser?.profile?.job_title || profile.title) && (
-                        <p className="text-xs text-muted-foreground">{authUser?.profile?.job_title || profile.title}</p>
+                      {authUser?.profile?.job_title && (
+                        <p className="text-xs text-muted-foreground">{authUser?.profile?.job_title}</p>
                       )}
                     </div>
                     <div className="w-2 h-2 bg-success rounded-full" aria-hidden />
@@ -266,7 +266,7 @@ export function AppSidebar() {
                 </SidebarFooter>
               )}
               </>
-            ):(
+            ):!authLoading && !authUser ?(
               <SidebarFooter className="p-4 relative border-t border-border">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-8 h-8">
@@ -281,7 +281,7 @@ export function AppSidebar() {
                   </Link>
                 </div>
               </SidebarFooter>
-            )}
+            ):null}
     </Sidebar>
   );
 }
