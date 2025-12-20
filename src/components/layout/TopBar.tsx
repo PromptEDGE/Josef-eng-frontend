@@ -36,7 +36,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function TopBar() {
   const activities = useSelector((state:RootState)=>state.activites.activities)
-  const { user: authUser } = useAuth(); // Get user from TanStack Query
+  const { user: authUser, isLoading: authLoading } = useAuth(); // Get user from TanStack Query
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState('');
   const [isDark, setIsDark] = useState(false);
@@ -89,7 +89,7 @@ export function TopBar() {
         </Button> */}
 
         {/* Notifications */}
-       {authUser && <DropdownMenu>
+       {!authLoading && authUser && <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 relative">
               <Bell className="w-4 h-4" />
@@ -126,7 +126,7 @@ export function TopBar() {
         </DropdownMenu>}
 
         {/* User Menu */}
-        {authUser ? <DropdownMenu>
+        {!authLoading && authUser ? <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
               <Avatar className="h-8 w-8">
@@ -155,13 +155,13 @@ export function TopBar() {
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>:
+        </DropdownMenu>:!authLoading && !authUser ?
         <NavLink to={"/signin"} >
           <Button variant="secondary" className='h-8 bg-gradient-to-r from-blue-400 to-blue-600 text-white ' >
             sign in
           </Button>
         </NavLink>
-        }
+        : null}
       </div>
     </header>
   );
