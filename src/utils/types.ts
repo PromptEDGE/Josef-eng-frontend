@@ -104,6 +104,25 @@ export type SignInFormType = {
   password: string,
 };
 
+export interface UserProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  theme: string;
+  language: string;
+  timezone: string;
+  notification_email: boolean;
+  push: boolean;
+  sound: boolean;
+  bio: string | null;
+  phone: string | null;
+  company: string | null;
+  location: string | null;
+  job_title: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserDetail {
   id: string;
   email: string;
@@ -112,11 +131,19 @@ export interface UserDetail {
   created_at: string; // ISO date string
   updated_at: string; // ISO date string
 };
+
 export interface User  {
+  // User with nested profile (returned by /me endpoint)
+  id: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+  profile: UserProfile;
+
   // DEPRECATED: Tokens are now stored in httpOnly cookies
   // These fields are kept for backward compatibility with old signin responses
   access_token?: string;
   refresh_token?: string;
   token_type?: string; // usually "bearer"
-  user: UserDetail;
+  user?: UserDetail; // Legacy signin response format
 }
