@@ -6,6 +6,7 @@ import {
   uploadGeneralFile,
   uploadProjectFile,
   uploadStatus,
+  cancelUpload as cancelUploadApi,
 } from "@/api/documents";
 import { v4 as uuidv4 } from "uuid";
 import { useMutation } from "@tanstack/react-query";
@@ -83,15 +84,41 @@ const useUploadFiles = () => {
   }, []);
 
   const cancelUpload = useCallback((id: string) => {
+    const task = uploads.find(u => u.id === id);
+    if (!task) return;
+
+    // Confirmation dialog for uploads that have progress
+    if (task.progress > 10) {
+      const confirmed = window.confirm(
+        `Are you sure you want to cancel "${task.file.name}"? This will delete the partially uploaded file.`
+      );
+      if (!confirmed) return;
+    }
+
+    // Abort the upload
     const controller = controllersRef.current.get(id);
     if (controller) {
       controller.abort();
-      return;
+      controllersRef.current.delete(id);
     }
 
-    // If the upload hasn't started yet, mark it as canceled immediately
-    updateUpload(id, { status: "canceled", progress: 0, error: "Upload canceled" });
-  }, [updateUpload]);
+    // Call backend cancellation if task has started
+    if (task.data && typeof task.data === 'object' && 'task' in task.data) {
+      const taskId = (task.data as any).task;
+      if (taskId) {
+        cancelUploadApi(taskId).catch(err => {
+          console.error("Failed to cancel upload on backend:", err);
+        });
+      }
+    }
+
+    updateUpload(id, {
+      status: "canceled",
+      completedAt: Date.now(),
+      progress: 0,
+      error: "Upload canceled"
+    });
+  }, [uploads, updateUpload]);
 
   const resetUploads = useCallback(() => {
     controllersRef.current.forEach((controller) => controller.abort());
@@ -161,13 +188,23 @@ const useUploadFiles = () => {
             const interval = setInterval(async ()=>{
               await checkStatus(fileData?.[0].task,{
                  onSuccess: (data)=>{
+                   // Map Celery states correctly:
+                   // SUCCESS → success (complete)
+                   // FAILURE → error (failed)
+                   // PENDING, STARTED, PROGRESS, RETRY → uploading (in progress)
+                   const isSuccess = data.status === "SUCCESS";
+                   const isFailed = data.status === "FAILURE";
+
                    updateUpload(task.id, {
-                     status: data.status==="SUCCESS"?"success":data.status==="PENDING"?"uploading":"error",
-                     progress: data.status==="SUCCESS"?100:data.status==="PENDING"?60:0,
+                     status: isSuccess ? "success" : isFailed ? "error" : "uploading",
+                     progress: isSuccess ? 100 : isFailed ? 0 : 60,
                      data,
-                     completedAt: Date.now(),
+                     completedAt: isSuccess || isFailed ? Date.now() : undefined,
+                     error: isFailed ? (data.result || "Processing failed") : undefined,
                    });
-                   if(data.status==="SUCCESS"){
+
+                   // Clear interval on terminal states (success or failure)
+                   if(isSuccess || isFailed){
                      clearInterval(interval)
                    }
                  },
@@ -213,8 +250,24 @@ const useUploadFiles = () => {
     [uploads]
   );
 
+  const retryUpload = useCallback((id: string) => {
+    const task = uploads.find(u => u.id === id);
+    if (!task || task.status !== 'error') return;
 
-  // update upload array for ui 
+    // Reset task to queued state
+    updateUpload(id, {
+      status: 'queued',
+      progress: 0,
+      error: undefined,
+      startedAt: undefined,
+      completedAt: undefined,
+    });
+
+    // Trigger upload by calling uploadFiles with the single file
+    uploadFiles({ files: [task.file], messageTypeResolver: () => task.messageType });
+  }, [uploads, updateUpload, uploadFiles]);
+
+  // update upload array for ui
   const clearUploads = ()=>{
     setUploads([]);
   }
@@ -227,7 +280,8 @@ const useUploadFiles = () => {
     cancelUpload,
     removeUpload,
     resetUploads,
-    clearUploads
+    clearUploads,
+    retryUpload,
   };
 };
 

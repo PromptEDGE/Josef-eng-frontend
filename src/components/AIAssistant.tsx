@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import {
   Send,
   Brain,
@@ -23,6 +24,7 @@ import {
   Paperclip,
   XCircle,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import MessageFile from './MessageFile';
@@ -105,6 +107,7 @@ export function AIAssistant() {
     removeUpload: removeProjectUpload,
     isUploading: isUploadingProject,
     clearUploads: clearProjectUploadsUi,
+    retryUpload: retryProjectUpload,
   } = useUploadFiles()
   const dispatch = useDispatch()
   const projects = useSelector((state:RootState)=>state.project.project)
@@ -122,6 +125,14 @@ export function AIAssistant() {
     file_type: string;
     full_content: string;
   }>>([]);
+
+  // Computed state: Check if any upload is actively in progress
+  const hasActiveUploads = useMemo(() => {
+    return projectUploads.some(upload =>
+      upload.status === 'uploading' ||
+      upload.status === 'queued'
+    );
+  }, [projectUploads]);
 
   const uploadStatusConfig: Record<UploadStatus, { label: string; variant: 'secondary' | 'outline' | 'destructive' }> = {
     queued: { label: 'Queued', variant: 'outline' },
@@ -188,7 +199,23 @@ export function AIAssistant() {
   const handleSendMessage = async () => {
     const prompt = inputValue.trim();
 
-    if (!prompt) {
+    // CRITICAL: Block sending if uploads in progress
+    if (hasActiveUploads) {
+      toast({
+        title: 'Upload in progress',
+        description: 'Please wait for file uploads to complete before sending a message',
+        variant: 'destructive',
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!prompt && uploadedFilesData.length === 0) {
+      toast({
+        title: 'Empty message',
+        description: 'Please enter a message or upload a file',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -638,6 +665,12 @@ export function AIAssistant() {
           </div>}
 
           <>
+            {hasActiveUploads && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-700 dark:text-blue-300">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>File upload in progress. Messaging disabled until upload completes.</span>
+              </div>
+            )}
             {projectUploads.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -674,11 +707,21 @@ export function AIAssistant() {
                         </div>
                         <div className="flex items-center gap-2">
                           {canCancel && (
-                            <Button variant="ghost" size="sm" onClick={() => cancelProjectUpload(task.id)}>
+                            <Button variant="destructive" size="sm" onClick={() => cancelProjectUpload(task.id)}>
                               <XCircle className="w-4 h-4 mr-1" /> Cancel
                             </Button>
                           )}
-                          {canRemove && (
+                          {task.status === 'error' && (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => retryProjectUpload(task.id)}>
+                                <RefreshCw className="w-4 h-4 mr-1" /> Retry
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => removeProjectUpload(task.id)}>
+                                <Trash2 className="w-4 h-4 mr-1" /> Remove
+                              </Button>
+                            </>
+                          )}
+                          {task.status !== 'error' && canRemove && (
                             <Button variant="ghost" size="sm" onClick={() => removeProjectUpload(task.id)}>
                               <Trash2 className="w-4 h-4 mr-1" /> Remove
                             </Button>
@@ -730,11 +773,26 @@ export function AIAssistant() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0"
+                    className={cn(
+                      "h-6 w-6 p-0",
+                      hasActiveUploads && "opacity-50 cursor-not-allowed"
+                    )}
                     onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || MsgLoading || !project}
+                    disabled={
+                      !inputValue.trim() ||
+                      MsgLoading ||
+                      !project ||
+                      hasActiveUploads
+                    }
+                    title={hasActiveUploads ? "Upload in progress..." : "Send message"}
                   >
-                    <Send className="w-4 h-4" />
+                    {MsgLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : hasActiveUploads ? (
+                      <span className="text-xs">⏳</span>
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               </div>
