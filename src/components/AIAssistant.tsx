@@ -575,7 +575,7 @@ export function AIAssistant() {
                     }`}
                   >
                     
-                    {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} filename={message.content.filename} />}
+                    {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />}
                     {message.content.text && (
                       <div className="text-sm whitespace-pre-wrap">
                         {renderFormattedText(message.content.text)}
