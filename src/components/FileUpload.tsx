@@ -69,7 +69,7 @@ const acceptedFileTypes = {
   'application/vnd.ms-excel': ['.xls'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
   'application/msword': ['.doc'],
-  'image/*': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff'],
+  'image/*': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.heic'],
   'video/*': ['.mp4', '.avi', '.mov', '.wmv'],
   'audio/*': ['.mp3', '.wav', '.m4a'],
   'application/octet-stream': ['.dwg', '.dxf'],
