@@ -39,6 +39,7 @@ import useUploadFiles, { UploadStatus } from '@/hooks/useUploadFiles';
 import useProjectChat from '@/hooks/useProjectChat';
 import UploadBtnWrap from './UploadBtnWrap';
 import { Progress } from '@/components/ui/progress';
+import { MediaRecorderModal, type MediaRecorderMode } from './MediaRecorderModal';
 
 
 
@@ -116,6 +117,8 @@ export function AIAssistant() {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState<boolean>(true);
   const [showUploadOptions, setShowUploadOptions] = useState<boolean>(false);
+  const [recorderOpen, setRecorderOpen] = useState(false);
+  const [recorderMode, setRecorderMode] = useState<MediaRecorderMode | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
@@ -310,6 +313,36 @@ export function AIAssistant() {
     },
     [project, queueProjectUploads, toast]
   );
+
+  const handleFilesReady = useCallback(
+    (files: File[]) => {
+      if (!project) {
+        toast({
+          title: 'Project unavailable',
+          description: 'Select or create a project before uploading files.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!files.length) return;
+      queueProjectUploads({ files, projectId: project.id });
+      setShowUploadOptions(false);
+      setRecorderOpen(false);
+      setRecorderMode(null);
+    },
+    [project, queueProjectUploads, toast]
+  );
+
+  const openRecorder = useCallback((mode: MediaRecorderMode) => {
+    setShowUploadOptions(false);
+    setRecorderMode(mode);
+    setRecorderOpen(true);
+  }, []);
+
+  const closeRecorder = useCallback(() => {
+    setRecorderOpen(false);
+    setRecorderMode(null);
+  }, []);
 
   const detectCategory = (input: string): Message['category'] => {
     const lower = input.toLowerCase();
@@ -660,9 +693,22 @@ export function AIAssistant() {
 
         {/* Input Area */}
         <div className="p-4 space-y-4 border-t border-border">
-          {showUploadOptions && <div className="absolute bottom-[150px] z-30 w-[180px] p-3 shadow bg-transparent backdrop-blur rounded-lg ">
-            <UploadBtnWrap show={showUploadOptions} changeFile={handleProjectFileSelection} />
-          </div>}
+          {showUploadOptions && (
+            <div className="absolute bottom-[150px] z-30 w-[180px] p-3 shadow bg-transparent backdrop-blur rounded-lg ">
+              <UploadBtnWrap
+                show={showUploadOptions}
+                changeFile={handleProjectFileSelection}
+                onRecordVideo={() => openRecorder('video')}
+                onRecordAudio={() => openRecorder('audio')}
+              />
+            </div>
+          )}
+          <MediaRecorderModal
+            open={recorderOpen}
+            mode={recorderMode}
+            onClose={closeRecorder}
+            onComplete={handleFilesReady}
+          />
 
           <>
             {hasActiveUploads && (
