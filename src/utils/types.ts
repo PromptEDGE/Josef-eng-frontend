@@ -35,7 +35,8 @@ export interface Message {
   type: 'user' | 'assistant' | 'system';
   content: {
     text?: string;
-    fileUrl?: string
+    fileUrl?: string;
+    filename?: string;
   };
   timestamp: string;
   attachments?: string[];
