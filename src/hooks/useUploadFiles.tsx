@@ -25,6 +25,9 @@ export interface UploadTask {
   completedAt?: number;
 }
 
+const MAX_CONCURRENT_UPLOADS = 3;
+const STATUS_POLL_INTERVAL_MS = 1000;
+
 const errorMessageFrom = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
@@ -148,79 +151,54 @@ const useUploadFiles = () => {
       }));
       setUploads((prev) => [...prev, ...queuedTasks]);
 
-      for (const task of queuedTasks) {
-        if (!isMountedRef.current) {
-          break;
-        }
-
-        if (controllersRef.current.has(task.id)) {
-          continue;
+      const processTask = async (task: UploadTask) => {
+        if (!isMountedRef.current || controllersRef.current.has(task.id)) {
+          return;
         }
 
         const controller = new AbortController();
         controllersRef.current.set(task.id, controller);
 
         const startedAt = Date.now();
-        updateUpload(task.id, { status: "uploading", progress:12, startedAt });
+        updateUpload(task.id, { status: "uploading", progress: 12, startedAt });
 
         try {
           const data = projectId
-            ? 
-            await uploadProjectFile(projectId, task.file, task.messageType,
-               {
+            ? await uploadProjectFile(projectId, task.file, task.messageType, {
                 signal: controller.signal,
                 metadata,
-                // onProgress: () => {
-                //   updateUpload(task.id, { progress: 60 });
-                // },
-              }
-            )
-            : await uploadGeneralFile(task.file, task.messageType, 
-              {
+              })
+            : await uploadGeneralFile(task.file, task.messageType, {
                 signal: controller.signal,
                 metadata,
-                // onProgress: () => {
-                //   updateUpload(task.id, { progress: 90 });
-                // },
-              }
-            );
-            const fileData= data
-            const interval = setInterval(async ()=>{
-              await checkStatus(fileData?.[0].task,{
-                 onSuccess: (data)=>{
-                   // Map Celery states correctly:
-                   // SUCCESS → success (complete)
-                   // FAILURE → error (failed)
-                   // PENDING, STARTED, PROGRESS, RETRY → uploading (in progress)
-                   const isSuccess = data.status === "SUCCESS";
-                   const isFailed = data.status === "FAILURE";
+              });
 
-                   updateUpload(task.id, {
-                     status: isSuccess ? "success" : isFailed ? "error" : "uploading",
-                     progress: isSuccess ? 100 : isFailed ? 0 : 60,
-                     data,
-                     completedAt: isSuccess || isFailed ? Date.now() : undefined,
-                     error: isFailed ? (data.result || "Processing failed") : undefined,
-                   });
+          const taskId = data?.[0]?.task;
+          if (!taskId) {
+            throw new Error("Upload task id missing from server response");
+          }
 
-                   // Clear interval on terminal states (success or failure)
-                   if(isSuccess || isFailed){
-                     clearInterval(interval)
-                   }
-                 },
-                 onError: (error)=>{
-                  clearInterval(interval)
-                   updateUpload(task.id, {
-                     status: "error",
-                     progress: 0,
-                     error: errorMessageFrom(error),
-                     completedAt: Date.now(),
-                   });
-                   logger.debug(error)
-                 }
-               })
-            },1000)
-  
+          // Poll Celery status until the task reaches terminal state.
+          while (isMountedRef.current && !controller.signal.aborted) {
+            const statusData = await checkStatus(taskId);
+            const state = statusData?.status;
+            const isSuccess = state === "SUCCESS";
+            const isFailed = state === "FAILURE";
+
+            updateUpload(task.id, {
+              status: isSuccess ? "success" : isFailed ? "error" : "uploading",
+              progress: isSuccess ? 100 : isFailed ? 0 : 60,
+              data: statusData,
+              completedAt: isSuccess || isFailed ? Date.now() : undefined,
+              error: isFailed ? (statusData?.result || "Processing failed") : undefined,
+            });
+
+            if (isSuccess || isFailed) {
+              break;
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, STATUS_POLL_INTERVAL_MS));
+          }
         } catch (error) {
           const aborted = controller.signal.aborted;
           const status: UploadStatus = aborted ? "canceled" : "error";
@@ -231,10 +209,25 @@ const useUploadFiles = () => {
             completedAt: Date.now(),
             progress: 0,
           });
+          logger.debug(error);
         } finally {
           controllersRef.current.delete(task.id);
         }
-      }
+      };
+
+      const queue = [...queuedTasks];
+      const workerCount = Math.min(MAX_CONCURRENT_UPLOADS, queue.length);
+      const workers = Array.from({ length: workerCount }, async () => {
+        while (isMountedRef.current && queue.length) {
+          const nextTask = queue.shift();
+          if (!nextTask) {
+            break;
+          }
+          await processTask(nextTask);
+        }
+      });
+
+      await Promise.all(workers);
       return queuedTasks;
     },
     [updateUpload,checkStatus]
