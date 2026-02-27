@@ -25,7 +25,7 @@ export interface UploadTask {
   completedAt?: number;
 }
 
-const MAX_CONCURRENT_UPLOADS = 3;
+const MAX_CONCURRENT_UPLOADS = 1;
 const STATUS_POLL_INTERVAL_MS = 1000;
 
 const errorMessageFrom = (error: unknown) => {
