@@ -1,5 +1,5 @@
 import { logger } from "@/utils/logger";
-import { useState, useRef, useEffect, useCallback, ChangeEvent, ReactNode, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, ChangeEvent, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,8 @@ import useProjectChat from '@/hooks/useProjectChat';
 import UploadBtnWrap from './UploadBtnWrap';
 import { Progress } from '@/components/ui/progress';
 import { MediaRecorderModal, type MediaRecorderMode } from './MediaRecorderModal';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 
 
@@ -64,6 +66,13 @@ const predefinedQuestions = [
     category: "troubleshooting",
     icon: Search
   }
+];
+
+const loadingMessages = [
+  "Reviewing HVAC context...",
+  "Checking uploaded engineering references...",
+  "Analyzing system conditions and constraints...",
+  "Preparing HVAC-focused recommendations...",
 ];
 type ProjectHistory = {
   role: string;
@@ -128,6 +137,7 @@ export function AIAssistant() {
     file_type: string;
     full_content: string;
   }>>([]);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   // Computed state: Check if any upload is actively in progress
   const hasActiveUploads = useMemo(() => {
@@ -155,38 +165,6 @@ export function AIAssistant() {
     const size = bytes / Math.pow(1024, index);
     return `${size.toFixed(1)} ${units[index]}`;
   }
-
-  const renderFormattedText = (text: string): ReactNode[] => {
-    const fragments: ReactNode[] = [];
-    const segments = text.split(/(\*\*[^*]+\*\*)/g);
-
-    segments.forEach((segment, segIndex) => {
-      if (!segment) {
-        return;
-      }
-
-      const isBold = segment.startsWith('**') && segment.endsWith('**');
-      if (isBold) {
-        const content = segment.slice(2, -2);
-        fragments.push(
-          <strong key={`bold-${segIndex}`}>{content}</strong>
-        );
-        return;
-      }
-
-      const lines = segment.split('\n');
-      lines.forEach((line, lineIndex) => {
-        fragments.push(
-          <span key={`text-${segIndex}-${lineIndex}`}>{line}</span>
-        );
-        if (lineIndex < lines.length - 1) {
-          fragments.push(<br key={`br-${segIndex}-${lineIndex}`} />);
-        }
-      });
-    });
-
-    return fragments;
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -508,6 +486,19 @@ export function AIAssistant() {
   }, [messages]);
 
   useEffect(() => {
+    if (!MsgLoading) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 1800);
+
+    return () => window.clearInterval(interval);
+  }, [MsgLoading]);
+
+  useEffect(() => {
     projectUploads.forEach((task) => {
       if (!['success', 'error', 'canceled'].includes(task.status)) {
         return;
@@ -610,8 +601,32 @@ export function AIAssistant() {
                     
                     {message.content.fileUrl&&<MessageFile message={message.content.fileUrl} />}
                     {message.content.text && (
-                      <div className="text-sm whitespace-pre-wrap">
-                        {renderFormattedText(message.content.text)}
+                      <div className="text-sm w-full">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            ul: ({ children }) => <ul className="mb-2 ml-5 list-disc space-y-1">{children}</ul>,
+                            ol: ({ children }) => <ol className="mb-2 ml-5 list-decimal space-y-1">{children}</ol>,
+                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                            h1: ({ children }) => <h1 className="mb-2 text-base font-semibold">{children}</h1>,
+                            h2: ({ children }) => <h2 className="mb-2 text-sm font-semibold">{children}</h2>,
+                            h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            code: ({ children }) => (
+                              <code className="rounded bg-black/10 px-1 py-0.5 text-xs">{children}</code>
+                            ),
+                            table: ({ children }) => (
+                              <div className="mb-2 overflow-x-auto">
+                                <table className="w-full border-collapse text-xs">{children}</table>
+                              </div>
+                            ),
+                            th: ({ children }) => <th className="border border-border/40 px-2 py-1 text-left">{children}</th>,
+                            td: ({ children }) => <td className="border border-border/30 px-2 py-1 align-top">{children}</td>,
+                          }}
+                        >
+                          {message.content.text}
+                        </ReactMarkdown>
                       </div>
                     )}
                     
@@ -676,7 +691,7 @@ export function AIAssistant() {
                 <div className="bg-muted text-muted-foreground p-3 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Analyzing your question...</span>
+                    <span className="text-sm">{loadingMessages[loadingMessageIndex]}</span>
                   </div>
                 </div>
               </div>
