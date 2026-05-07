@@ -13,8 +13,6 @@
 /public/dist
 
 # misc
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -24,6 +22,9 @@ yarn-debug.log*
 yarn-error.log*
 # editor directories and files
 .idea
-.vscode/*
 !.vscode/extensions.json
 .history
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+config.bat
