@@ -42,6 +42,7 @@ import { Progress } from '@/components/ui/progress';
 import { MediaRecorderModal, type MediaRecorderMode } from './MediaRecorderModal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { formatAssistantMarkdown } from '@/utils/llmFormat';
 
 
 
@@ -605,13 +606,13 @@ export function AIAssistant() {
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
                             ul: ({ children }) => <ul className="mb-2 ml-5 list-disc space-y-1">{children}</ul>,
                             ol: ({ children }) => <ol className="mb-2 ml-5 list-decimal space-y-1">{children}</ol>,
                             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                            h1: ({ children }) => <h1 className="mb-2 text-base font-semibold">{children}</h1>,
-                            h2: ({ children }) => <h2 className="mb-2 text-sm font-semibold">{children}</h2>,
-                            h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
+                            h1: ({ children }) => <h1 className="mb-2 text-lg font-semibold">{children}</h1>,
+                            h2: ({ children }) => <h2 className="mb-2 text-base font-semibold">{children}</h2>,
+                            h3: ({ children }) => <h3 className="mt-3 mb-2 text-base font-semibold first:mt-0">{children}</h3>,
                             strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                             code: ({ children }) => (
                               <code className="rounded bg-black/10 px-1 py-0.5 text-xs">{children}</code>
@@ -625,7 +626,9 @@ export function AIAssistant() {
                             td: ({ children }) => <td className="border border-border/30 px-2 py-1 align-top">{children}</td>,
                           }}
                         >
-                          {message.content.text}
+                          {message.type === 'assistant'
+                            ? formatAssistantMarkdown(message.content.text)
+                            : message.content.text}
                         </ReactMarkdown>
                       </div>
                     )}
